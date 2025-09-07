@@ -7,7 +7,9 @@ set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-FEATURE_DIR="$REPO_ROOT/specs/$CURRENT_BRANCH"
+# Remove feature/ prefix from branch name for directory
+FEATURE_DIR_NAME="${CURRENT_BRANCH#feature/}"
+FEATURE_DIR="$REPO_ROOT/specs/$FEATURE_DIR_NAME"
 NEW_PLAN="$FEATURE_DIR/plan.md"
 
 # Determine which agent context files to update
