@@ -1,116 +1,116 @@
-# Feature Specification: [FEATURE NAME]
+# 機能仕様: [機能名]
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**機能ブランチ**: `[###-feature-name]`  
+**作成日**: [日付]  
+**状態**: ドラフト  
+**入力**: ユーザー説明: "$ARGUMENTS"
 
-## Execution Flow (main)
+## 実行フロー（メイン）
 ```
-1. Parse user description from Input
-   → If empty: ERROR "No feature description provided"
-2. Extract key concepts from description
-   → Identify: actors, actions, data, constraints
-3. For each unclear aspect:
-   → Mark with [NEEDS CLARIFICATION: specific question]
-4. Fill User Scenarios & Testing section
-   → If no clear user flow: ERROR "Cannot determine user scenarios"
-5. Generate Functional Requirements
-   → Each requirement must be testable
-   → Mark ambiguous requirements
-6. Identify Key Entities (if data involved)
-7. Run Review Checklist
-   → If any [NEEDS CLARIFICATION]: WARN "Spec has uncertainties"
-   → If implementation details found: ERROR "Remove tech details"
-8. Return: SUCCESS (spec ready for planning)
+1. 入力からユーザー説明をパース
+   → 空の場合: エラー「機能説明が提供されていません」
+2. 説明から主要な概念を抽出
+   → 識別: アクター、アクション、データ、制約
+3. 不明な側面ごとに:
+   → [NEEDS CLARIFICATION: 具体的な質問] でマーク
+4. ユーザーシナリオ & テストセクションを埋める
+   → 明確なユーザーフローがない場合: エラー「ユーザーシナリオを特定できません」
+5. 機能要件を生成
+   → 各要件はテスト可能である必要がある
+   → 曖昧な要件をマーク
+6. 主要エンティティを特定（データが関係する場合）
+7. レビューチェックリストを実行
+   → [NEEDS CLARIFICATION] がある場合: 警告「仕様に不確実性があります」
+   → 実装詳細が見つかった場合: エラー「技術詳細を削除してください」
+8. 戻り値: 成功（計画準備完了）
 ```
 
 ---
 
-## ⚡ Quick Guidelines
-- ✅ Focus on WHAT users need and WHY
-- ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
-- 👥 Written for business stakeholders, not developers
+## ⚡ クイックガイドライン
+- ✅ ユーザーが何を必要とし、なぜ必要かに焦点を当てる
+- ❌ 実装方法を避ける（技術スタック、API、コード構造なし）
+- 👥 開発者ではなくビジネスステークホルダー向けに記述
 
-### Section Requirements
-- **Mandatory sections**: Must be completed for every feature
-- **Optional sections**: Include only when relevant to the feature
-- When a section doesn't apply, remove it entirely (don't leave as "N/A")
+### セクション要件
+- **必須セクション**: すべての機能で完成必須
+- **オプションセクション**: 機能に関連する場合のみ含める
+- セクションが適用されない場合は完全に削除（「N/A」として残さない）
 
-### For AI Generation
-When creating this spec from a user prompt:
-1. **Mark all ambiguities**: Use [NEEDS CLARIFICATION: specific question] for any assumption you'd need to make
-2. **Don't guess**: If the prompt doesn't specify something (e.g., "login system" without auth method), mark it
-3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
-4. **Common underspecified areas**:
-   - User types and permissions
-   - Data retention/deletion policies  
-   - Performance targets and scale
-   - Error handling behaviors
-   - Integration requirements
-   - Security/compliance needs
-
----
-
-## User Scenarios & Testing *(mandatory)*
-
-### Primary User Story
-[Describe the main user journey in plain language]
-
-### Acceptance Scenarios
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
-### Edge Cases
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
-
-## Requirements *(mandatory)*
-
-### Functional Requirements
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
-
-*Example of marking unclear requirements:*
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
-
-### Key Entities *(include if feature involves data)*
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+### AI 生成用
+ユーザープロンプトからこの仕様を作成する場合:
+1. **すべての曖昧さをマーク**: 仮定する必要があるものには [NEEDS CLARIFICATION: 具体的な質問] を使用
+2. **推測しない**: プロンプトで指定されていないもの（例:認証方法のない「ログインシステム」）はマークする
+3. **テスターのように考える**: 曖昧な要件はすべて「テスト可能で明確」チェックリスト項目で失敗するはず
+4. **一般的に不十分な領域**:
+   - ユーザータイプと権限
+   - データ保持/削除ポリシー  
+   - パフォーマンス目標とスケール
+   - エラー処理の動作
+   - 統合要件
+   - セキュリティ/コンプライアンスニーズ
 
 ---
 
-## Review & Acceptance Checklist
-*GATE: Automated checks run during main() execution*
+## ユーザーシナリオ & テスト *(必須)*
 
-### Content Quality
-- [ ] No implementation details (languages, frameworks, APIs)
-- [ ] Focused on user value and business needs
-- [ ] Written for non-technical stakeholders
-- [ ] All mandatory sections completed
+### 主要ユーザーストーリー
+[主要なユーザージャーニーを平易な言葉で説明]
 
-### Requirement Completeness
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous  
-- [ ] Success criteria are measurable
-- [ ] Scope is clearly bounded
-- [ ] Dependencies and assumptions identified
+### 受入シナリオ
+1. **前提** [初期状態]、**操作** [アクション]、**結果** [期待される結果]
+2. **前提** [初期状態]、**操作** [アクション]、**結果** [期待される結果]
+
+### エッジケース
+- [境界条件] のときに何が起こるか？
+- システムは [エラーシナリオ] をどう処理するか？
+
+## 要件 *(必須)*
+
+### 機能要件
+- **FR-001**: システムは [具体的機能、例：「ユーザーがアカウントを作成できる」] 必須
+- **FR-002**: システムは [具体的機能、例：「メールアドレスを検証する」] 必須  
+- **FR-003**: ユーザーは [主要な操作、例：「パスワードをリセットする」] ことができる必須
+- **FR-004**: システムは [データ要件、例：「ユーザー設定を永続化する」] 必須
+- **FR-005**: システムは [動作、例：「すべてのセキュリティイベントをログに記録する」] 必須
+
+*不明確な要件をマークする例:*
+- **FR-006**: システムは [NEEDS CLARIFICATION: 認証方法が未指定 - email/password、SSO、OAuth?] でユーザーを認証する必須
+- **FR-007**: システムは [NEEDS CLARIFICATION: 保持期間が未指定] ユーザーデータを保持する必須
+
+### 主要エンティティ *(機能がデータを扱う場合は含める)*
+- **[エンティティ1]**: [何を表すか、実装を除いた主要属性]
+- **[エンティティ2]**: [何を表すか、他のエンティティとの関係]
 
 ---
 
-## Execution Status
-*Updated by main() during processing*
+## レビュー & 受入チェックリスト
+*ゲート: main() 実行中に自動チェックが実行される*
 
-- [ ] User description parsed
-- [ ] Key concepts extracted
-- [ ] Ambiguities marked
-- [ ] User scenarios defined
-- [ ] Requirements generated
-- [ ] Entities identified
-- [ ] Review checklist passed
+### コンテンツ品質
+- [ ] 実装詳細なし（言語、フレームワーク、API）
+- [ ] ユーザー価値とビジネスニーズに焦点
+- [ ] 非技術系ステークホルダー向けに記述
+- [ ] すべての必須セクションが完成
+
+### 要件の完全性
+- [ ] [NEEDS CLARIFICATION] マーカーが残っていない
+- [ ] 要件がテスト可能で明確  
+- [ ] 成功基準が測定可能
+- [ ] スコープが明確に境界付けられている
+- [ ] 依存関係と仮定が特定されている
+
+---
+
+## 実行状態
+*処理中に main() で更新*
+
+- [ ] ユーザー説明をパース
+- [ ] 主要概念を抽出
+- [ ] 曖昧さをマーク
+- [ ] ユーザーシナリオを定義
+- [ ] 要件を生成
+- [ ] エンティティを特定
+- [ ] レビューチェックリストを通過
 
 ---
