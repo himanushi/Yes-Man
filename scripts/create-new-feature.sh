@@ -64,14 +64,15 @@ BRANCH_NAME=$(echo "$FEATURE_DESCRIPTION" | \
 # Extract 2-3 meaningful words
 WORDS=$(echo "$BRANCH_NAME" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//')
 
-# Final branch name
-BRANCH_NAME="${FEATURE_NUM}-${WORDS}"
+# Final branch name with feature/ prefix
+BRANCH_NAME="feature/${FEATURE_NUM}-${WORDS}"
 
 # Create and switch to new branch
 git checkout -b "$BRANCH_NAME"
 
-# Create feature directory
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+# Create feature directory (remove feature/ prefix for directory name)
+FEATURE_DIR_NAME="${FEATURE_NUM}-${WORDS}"
+FEATURE_DIR="$SPECS_DIR/$FEATURE_DIR_NAME"
 mkdir -p "$FEATURE_DIR"
 
 # Copy template if it exists
