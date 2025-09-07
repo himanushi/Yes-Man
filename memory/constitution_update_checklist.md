@@ -1,85 +1,85 @@
-# Constitution Update Checklist
+# 憲法更新チェックリスト
 
-When amending the constitution (`/memory/constitution.md`), ensure all dependent documents are updated to maintain consistency.
+憲法（`/memory/constitution.md`）を修正する際は、一貫性を保つためにすべての依存ドキュメントが更新されていることを確認してください。
 
-## Templates to Update
+## 更新すべきテンプレート
 
-### When adding/modifying ANY article:
-- [ ] `/templates/plan-template.md` - Update Constitution Check section
-- [ ] `/templates/spec-template.md` - Update if requirements/scope affected
-- [ ] `/templates/tasks-template.md` - Update if new task types needed
-- [ ] `/.claude/commands/plan.md` - Update if planning process changes
-- [ ] `/.claude/commands/tasks.md` - Update if task generation affected
-- [ ] `/CLAUDE.md` - Update runtime development guidelines
+### 任意の条項を追加/修正する場合:
+- [ ] `/templates/plan-template.md` - 憲法チェックセクションの更新
+- [ ] `/templates/spec-template.md` - 要件/スコープが影響を受ける場合は更新
+- [ ] `/templates/tasks-template.md` - 新しいタスクタイプが必要な場合は更新
+- [ ] `/.claude/commands/plan.md` - 計画プロセスが変更される場合は更新
+- [ ] `/.claude/commands/tasks.md` - タスク生成が影響を受ける場合は更新
+- [ ] `/CLAUDE.md` - ランタイム開発ガイドラインの更新
 
-### Article-specific updates:
+### 条項固有の更新:
 
-#### Article I (Library-First):
-- [ ] Ensure templates emphasize library creation
-- [ ] Update CLI command examples
-- [ ] Add llms.txt documentation requirements
+#### 条項 I (ライブラリファースト):
+- [ ] テンプレートでライブラリ作成を強調することを確認
+- [ ] CLI コマンドの例を更新
+- [ ] llms.txt ドキュメント要件を追加
 
-#### Article II (CLI Interface):
-- [ ] Update CLI flag requirements in templates
-- [ ] Add text I/O protocol reminders
+#### 条項 II (CLI インターフェース):
+- [ ] テンプレートで CLI フラグ要件を更新
+- [ ] テキスト I/O プロトコルの注意事項を追加
 
-#### Article III (Test-First):
-- [ ] Update test order in all templates
-- [ ] Emphasize TDD requirements
-- [ ] Add test approval gates
+#### 条項 III (テストファースト):
+- [ ] すべてのテンプレートでテスト順序を更新
+- [ ] TDD 要件を強調
+- [ ] テスト承認ゲートを追加
 
-#### Article IV (Integration Testing):
-- [ ] List integration test triggers
-- [ ] Update test type priorities
-- [ ] Add real dependency requirements
+#### 条項 IV (統合テスト):
+- [ ] 統合テストのトリガーをリスト
+- [ ] テストタイプの優先順位を更新
+- [ ] 実際の依存関係要件を追加
 
-#### Article V (Observability):
-- [ ] Add logging requirements to templates
-- [ ] Include multi-tier log streaming
-- [ ] Update performance monitoring sections
+#### 条項 V (監視可能性):
+- [ ] テンプレートにログ要件を追加
+- [ ] マルチティアログストリーミングを含める
+- [ ] パフォーマンス監視セクションを更新
 
-#### Article VI (Versioning):
-- [ ] Add version increment reminders
-- [ ] Include breaking change procedures
-- [ ] Update migration requirements
+#### 条項 VI (バージョニング):
+- [ ] バージョン増分の注意事項を追加
+- [ ] 破壊的変更の手順を含める
+- [ ] 移行要件を更新
 
-#### Article VII (Simplicity):
-- [ ] Update project count limits
-- [ ] Add pattern prohibition examples
-- [ ] Include YAGNI reminders
+#### 条項 VII (シンプリシティ):
+- [ ] プロジェクト数の制限を更新
+- [ ] パターン禁止例を追加
+- [ ] YAGNI の注意事項を含める
 
-## Validation Steps
+## 検証手順
 
-1. **Before committing constitution changes:**
-   - [ ] All templates reference new requirements
-   - [ ] Examples updated to match new rules
-   - [ ] No contradictions between documents
+1. **憲法変更をコミットする前に:**
+   - [ ] すべてのテンプレートが新しい要件を参照している
+   - [ ] 例が新しいルールに合わせて更新されている
+   - [ ] ドキュメント間に矛盾がない
 
-2. **After updating templates:**
-   - [ ] Run through a sample implementation plan
-   - [ ] Verify all constitution requirements addressed
-   - [ ] Check that templates are self-contained (readable without constitution)
+2. **テンプレート更新後:**
+   - [ ] サンプル実装計画を実行する
+   - [ ] すべての憲法要件が対処されていることを確認
+   - [ ] テンプレートが自己完結的であることを確認（憲法なしで読める）
 
-3. **Version tracking:**
-   - [ ] Update constitution version number
-   - [ ] Note version in template footers
-   - [ ] Add amendment to constitution history
+3. **バージョン追跡:**
+   - [ ] 憲法のバージョン番号を更新
+   - [ ] テンプレートのフッターにバージョンを記載
+   - [ ] 憲法履歴に修正を追加
 
-## Common Misses
+## よくある見落とし
 
-Watch for these often-forgotten updates:
-- Command documentation (`/commands/*.md`)
-- Checklist items in templates
-- Example code/commands
-- Domain-specific variations (web vs mobile vs CLI)
-- Cross-references between documents
+以下のよく忘れがちな更新項目に注意してください:
+- コマンドドキュメント（`/commands/*.md`）
+- テンプレート内のチェックリスト項目
+- サンプルコード/コマンド
+- ドメイン固有のバリエーション（web vs mobile vs CLI）
+- ドキュメント間の相互参照
 
-## Template Sync Status
+## テンプレート同期ステータス
 
-Last sync check: 2025-07-16
-- Constitution version: 2.1.1
-- Templates aligned: ❌ (missing versioning, observability details)
+最終同期チェック: 2025-07-16
+- 憲法バージョン: 2.1.1
+- テンプレート整合性: ❌ (バージョニング、監視可能性の詳細が不足)
 
 ---
 
-*This checklist ensures the constitution's principles are consistently applied across all project documentation.*
+*このチェックリストは、憲法の原則がすべてのプロジェクトドキュメントに一貫して適用されることを保証します。*
