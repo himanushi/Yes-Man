@@ -10,7 +10,7 @@ import numpy as np
 import logging
 import asyncio
 import threading
-from typing import Optional, Callable, Dict, Any, List
+from typing import Optional, Callable, Dict, Any, List, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 from collections import deque
