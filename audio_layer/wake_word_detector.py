@@ -167,6 +167,11 @@ class WakeWordDetector:
                     time.sleep(0.1)
                     continue
                 
+                # 音声活動検出（無音かどうかチェック）
+                if not self._has_voice_activity(audio_data):
+                    time.sleep(0.1)
+                    continue
+                
                 # ウェイクワード検出実行
                 start_time = datetime.now()
                 confidence, detected_text = self._detect_wake_word(audio_data)
@@ -230,7 +235,9 @@ class WakeWordDetector:
             return confidence, text
             
         except Exception as e:
+            import traceback
             self.logger.error(f"Wake word detection error: {e}")
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             return 0.0, ""
     
     def _calculate_wake_word_confidence(self, text: str) -> float:
@@ -309,6 +316,31 @@ class WakeWordDetector:
         """
         with self._buffer_lock:
             self._audio_buffer.clear()
+    
+    def _has_voice_activity(self, audio_data: np.ndarray, threshold: float = 0.01) -> bool:
+        """
+        音声活動検出
+        
+        Args:
+            audio_data: 音声データ
+            threshold: 音声レベル閾値
+            
+        Returns:
+            bool: 音声活動があるか
+        """
+        if len(audio_data) == 0:
+            return False
+        
+        # RMS（実効値）計算
+        rms = np.sqrt(np.mean(audio_data ** 2))
+        
+        # 閾値と比較
+        has_activity = rms > threshold
+        
+        if has_activity:
+            self.logger.debug(f"Voice activity detected: RMS={rms:.4f} (threshold={threshold:.4f})")
+        
+        return has_activity
     
     def _update_metrics(self, detection_time_ms: int, confidence: float) -> None:
         """パフォーマンスメトリクス更新"""
