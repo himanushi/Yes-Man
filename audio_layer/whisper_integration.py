@@ -15,18 +15,7 @@ from datetime import datetime
 import queue
 import threading
 
-try:
-    import whisper
-    WHISPER_AVAILABLE = True
-except ImportError:
-    WHISPER_AVAILABLE = False
-    # 開発時のモック用
-    class MockWhisper:
-        def __init__(self, model_name: str):
-            self.model_name = model_name
-        
-        def transcribe(self, audio_data: np.ndarray, language: str = "ja") -> Dict[str, Any]:
-            return {"text": "モックテキスト（Whisperライブラリ未インストール）", "segments": []}
+import whisper
 
 
 @dataclass
@@ -76,11 +65,6 @@ class WhisperIntegration:
             bool: 初期化成功
         """
         try:
-            if not WHISPER_AVAILABLE:
-                self.logger.warning("Whisper library not available, using mock")
-                self.model = MockWhisper(self.config.model_size)
-                self._is_initialized = True
-                return True
             
             self.logger.info(f"Initializing Whisper model: {self.config.model_size}")
             
@@ -103,11 +87,7 @@ class WhisperIntegration:
             
         except Exception as e:
             self.logger.error(f"Failed to initialize Whisper: {e}")
-            # フォールバックとしてモック使用
-            self.logger.info("Falling back to mock Whisper")
-            self.model = MockWhisper(self.config.model_size)
-            self._is_initialized = True
-            return True
+            return False
     
     def transcribe(self, audio_data: np.ndarray, 
                   language: Optional[str] = None) -> Dict[str, Any]:
@@ -141,17 +121,12 @@ class WhisperIntegration:
                 audio_data = self._normalize_audio(audio_data)
                 
                 # Whisper実行
-                if isinstance(self.model, MockWhisper):
-                    # モック使用
-                    result = self.model.transcribe(audio_data, language or self.config.language)
-                else:
-                    # 実際のWhisper使用
-                    result = self.model.transcribe(
-                        audio_data,
-                        language=language or self.config.language,
-                        word_timestamps=self.config.word_timestamps,
-                        initial_prompt=self.config.initial_prompt
-                    )
+                result = self.model.transcribe(
+                    audio_data,
+                    language=language or self.config.language,
+                    word_timestamps=self.config.word_timestamps,
+                    initial_prompt=self.config.initial_prompt
+                )
                 
                 # 処理時間計測
                 processing_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
@@ -254,19 +229,13 @@ class WhisperIntegration:
             # 言語検出モードで実行
             audio_normalized = self._normalize_audio(audio_data)
             
-            if isinstance(self.model, MockWhisper):
-                # モック使用
-                result = self.model.transcribe(audio_normalized)
-                language = "ja"  # モックでは日本語固定
-                confidence = 0.8
-            else:
-                # 実際のWhisper使用
-                result = self.model.transcribe(
-                    audio_normalized,
-                    language=None  # 自動検出
-                )
-                language = result.get("language", "unknown")
-                confidence = self._calculate_confidence(result)
+            # Whisper使用
+            result = self.model.transcribe(
+                audio_normalized,
+                language=None  # 自動検出
+            )
+            language = result.get("language", "unknown")
+            confidence = self._calculate_confidence(result)
             
             return language, confidence
             
