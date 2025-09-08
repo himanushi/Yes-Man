@@ -18,10 +18,10 @@
 特殊構成: audio_layer(メインPython), face_ui(Electron), langflow_flows(設定)
 
 ## フェーズ 3.1: セットアップ
-- [ ] T001 プロジェクト構造を作成（audio_layer/, face_ui/, langflow_flows/, tests/）
-- [ ] T002 Python仮想環境をwhispercpp[gpu], langflow, requests依存関係で初期化
-- [ ] T003 [P] Electron UIをReact依存関係で初期化（face_ui/package.json）
-- [ ] T004 [P] リンティングとフォーマットツールを設定（black, pylint, ESLint）
+- [x] T001 プロジェクト構造を作成（audio_layer/, face_ui/, langflow_flows/, tests/）
+- [x] T002 Python仮想環境をwhispercpp[gpu], langflow, requests依存関係で初期化
+- [x] T003 [P] Electron UIをReact依存関係で初期化（face_ui/package.json）
+- [x] T004 [P] リンティングとフォーマットツールを設定（black, pylint, ESLint）
 
 ## フェーズ 3.2: テストファースト（TDD）⚠️ 3.3 より前に完了必須
 **重要: これらのテストは記述され、実装前に失敗する必要があります**
@@ -37,34 +37,34 @@
 - [ ] T014 [P] Integration test GUI settings change in tests/integration/test_gui_settings.py
 
 ## フェーズ 3.3: データモデル実装（テスト失敗後のみ）
-- [ ] T015 [P] ConversationSession model in audio_layer/database/models/conversation_session.py
-- [ ] T016 [P] ConversationExchange model in audio_layer/database/models/conversation_exchange.py
-- [ ] T017 [P] AgentSettings model in audio_layer/database/models/agent_settings.py
-- [ ] T018 [P] ToolConfiguration model in audio_layer/database/models/tool_configuration.py
-- [ ] T019 [P] AudioSettings model in audio_layer/database/models/audio_settings.py
-- [ ] T020 データベース初期化とマイグレーション in audio_layer/database/init_db.py
+- [x] T015 [P] ConversationSession model in audio_layer/database/models/conversation_session.py
+- [x] T016 [P] ConversationExchange model in audio_layer/database/models/conversation_exchange.py
+- [x] T017 [P] AgentSettings model in audio_layer/database/models/agent_settings.py
+- [x] T018 [P] ToolConfiguration model in audio_layer/database/models/tool_configuration.py
+- [x] T019 [P] AudioSettings model in audio_layer/database/models/audio_settings.py
+- [x] T020 データベース初期化とマイグレーション in audio_layer/database/init_db.py
 
 ## フェーズ 3.4: 音声レイヤー実装
-- [ ] T021 Whisper.cpp統合 in audio_layer/whisper_integration.py
-- [ ] T022 ウェイクワード検出 in audio_layer/wake_word_detector.py
-- [ ] T023 継続音声認識 in audio_layer/continuous_recognition.py
-- [ ] T024 VoiceVox TTS統合 in audio_layer/voicevox_integration.py
-- [ ] T025 音声バッファ管理 in audio_layer/audio_buffer.py
-- [ ] T026 音声レイヤーメイン in audio_layer/main.py
+- [x] T021 Whisper.cpp統合 in audio_layer/whisper_integration.py
+- [x] T022 ウェイクワード検出 in audio_layer/wake_word_detector.py
+- [x] T023 継続音声認識 in audio_layer/continuous_recognition.py
+- [x] T024 VoiceVox TTS統合 in audio_layer/voicevox_integration.py
+- [x] T025 音声バッファ管理 in audio_layer/audio_buffer.py
+- [x] T026 音声レイヤーメイン in audio_layer/main.py
 
 ## フェーズ 3.5: LangFlow統合
-- [ ] T027 LangFlowクライアント in audio_layer/langflow_client.py
-- [ ] T028 エージェント実行管理 in audio_layer/agent_executor.py
-- [ ] T029 ツール管理システム in audio_layer/tool_manager.py
-- [ ] T030 会話履歴管理 in audio_layer/conversation_manager.py
+- [x] T027 LangFlowクライアント in audio_layer/langflow_client.py
+- [x] T028 エージェント実行管理 in audio_layer/agent_executor.py
+- [x] T029 ツール管理システム in audio_layer/tool_manager.py
+- [x] T030 会話履歴管理 in audio_layer/conversation_manager.py
 
 ## フェーズ 3.6: 顔UI実装
-- [ ] T031 [P] 顔アニメーションコンポーネント in face_ui/src/components/FaceAnimation.tsx
+- [x] T031 [P] 顔アニメーションコンポーネント in face_ui/src/components/FaceAnimation.tsx
 - [ ] T032 [P] 設定画面コンポーネント in face_ui/src/components/Settings.tsx
-- [ ] T033 [P] システム状態管理 in face_ui/src/store/systemStore.ts
+- [x] T033 [P] システム状態管理 in face_ui/src/store/systemStore.ts
 - [ ] T034 Python-ElectronIPCブリッジ in face_ui/src/services/ipcBridge.ts
-- [ ] T035 メインElectronプロセス in face_ui/public/electron.js
-- [ ] T036 顔UIメインアプリ in face_ui/src/App.tsx
+- [x] T035 メインElectronプロセス in face_ui/public/electron.js
+- [x] T036 顔UIメインアプリ in face_ui/src/App.tsx
 
 ## フェーズ 3.7: LangFlowエージェント設定
 - [ ] T037 [P] Yes-Manエージェントフロー設定 in langflow_flows/yes_man_agent.json
