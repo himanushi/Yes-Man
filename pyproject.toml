@@ -68,6 +68,9 @@ authors = [
 dependencies = [
     # 音声処理  
     "openai-whisper>=20231117",
+    "torch",
+    "torchvision", 
+    "torchaudio",
     "pyaudio>=0.2.13", 
     "numpy>=1.24.0",
     "sounddevice>=0.4.6",
@@ -85,6 +88,10 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic>=2.5.0",
     "structlog>=23.2.0",
+    
+    # その他
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
 ]
 
 [project.optional-dependencies]
@@ -109,6 +116,16 @@ yes-man-check-audio = "scripts.check:check_audio"
 yes-man-check-wake-word = "scripts.check:check_wake_word"
 yes-man-check-all = "scripts.check:check_all"
 yes-man-start-voicevox = "scripts.start_voicevox:main"
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu124" }]
+torchvision = [{ index = "pytorch-cu124" }]
+torchaudio = [{ index = "pytorch-cu124" }]
 
 [tool.hatch.build.targets.wheel]
 packages = ["audio_layer"]
