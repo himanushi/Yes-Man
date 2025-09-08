@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Yes-Man 顔アニメーションUI (Electron + React)",
   "main": "public/electron.js",
-  "homepage": "./",
+  "homepage": "http://./",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",
@@ -78,5 +78,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
