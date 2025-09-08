@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Yes-Man 音声対話アシスタント - Fallout New Vegas風" />
+    
+    <!-- PWA設定 -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- SEO/メタタグ -->
+    <meta name="author" content="Yes-Man Project" />
+    <meta name="keywords" content="Yes-Man,音声アシスタント,Fallout,AI,音声認識,TTS" />
+    
+    <!-- セキュリティ -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        font-src 'self' data:;
+        connect-src 'self' http://localhost:* ws://localhost:*;
+        media-src 'self' blob:;
+    " />
+    
+    <!-- フォントプリロード -->
+    <link rel="preload" href="data:font/woff2;base64," as="font" type="font/woff2" crossorigin />
+    
+    <title>Yes-Man Voice Assistant</title>
+    
+    <style>
+        /* 初期読み込み用スタイル */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid transparent;
+            border-top: 3px solid #00ff41;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ff41;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+        
+        /* JavaScript無効時のフォールバック */
+        .no-js {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            padding: 50px 20px;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <!-- JavaScript無効時の警告 -->
+    <noscript>
+        <div class="no-js" style="display: block;">
+            <h1>Yes-Man Voice Assistant</h1>
+            <p>このアプリケーションを利用するにはJavaScriptを有効にしてください。</p>
+            <p>Please enable JavaScript to use this application.</p>
+        </div>
+    </noscript>
+    
+    <!-- 初期読み込み画面 -->
+    <div id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Yes-Man...</div>
+    </div>
+    
+    <!-- Reactアプリケーションのマウントポイント -->
+    <div id="root"></div>
+    
+    <script>
+        // 初期化完了時に読み込み画面を非表示
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.style.opacity = '0';
+                    loading.style.transition = 'opacity 0.5s ease';
+                    setTimeout(function() {
+                        loading.style.display = 'none';
+                    }, 500);
+                }
+            }, 1000);
+        });
+        
+        // エラーハンドリング
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+        
+        // 未処理のPromise拒否をキャッチ
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+        
+        // パフォーマンス監視
+        if ('performance' in window) {
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    const perfData = performance.getEntriesByType('navigation')[0];
+                    if (perfData) {
+                        console.log('Page load time:', perfData.loadEventEnd - perfData.fetchStart, 'ms');
+                    }
+                }, 0);
+            });
+        }
+        
+        // Electron環境判定
+        if (typeof window !== 'undefined' && window.process && window.process.type) {
+            document.body.classList.add('electron-app');
+        } else {
+            document.body.classList.add('browser-app');
+        }
+        
+        // 開発/本番環境判定
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            document.body.setAttribute('data-env', 'development');
+        } else {
+            document.body.setAttribute('data-env', 'production');
+        }
+    </script>
+</body>
+</html>
