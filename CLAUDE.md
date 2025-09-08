@@ -75,4 +75,8 @@ curl http://localhost:50021/speakers
 <!-- 手動追加開始 -->
 ## 開発注意事項
 - **実行制限**: `uv run yes-man` を自動実行禁止（ユーザーが手動実行のみ）
+
+## API設定
+- **OpenAI API Key**: `.env`ファイルに`OPENAI_API_KEY=your_key_here`を設定
+- **LangFlow**: OpenAI gpt-5-miniモデルを使用（yes_man_agent.json）
 <!-- 手動追加終了 -->
