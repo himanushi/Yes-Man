@@ -23,7 +23,8 @@
       "Bash(uv pip uninstall:*)",
       "Bash(git clone:*)",
       "Bash(where cmake)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(npm init:*)"
     ],
     "deny": [],
     "ask": []
