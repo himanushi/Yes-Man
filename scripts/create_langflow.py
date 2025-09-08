@@ -98,7 +98,6 @@ Yes-Man:""",
                     "position": {"x": 600, "y": 200},
                     "data": {
                         "model_name": "gpt-5-mini",
-                        "api_key": openai_api_key,
                         "temperature": 0.8,
                         "max_tokens": 200,
                         "top_p": 1.0,
@@ -199,8 +198,26 @@ Yes-Man:""",
             return True
             
         else:
-            print(f"❌ Failed to create flow: {response.status_code}")
-            print(f"   Response: {response.text}")
+            print("\n❌ Flow creation failed. Creating secure JSON file for manual import...")
+            
+            # セキュアなJSONファイル作成（API Key完全除外）
+            secure_flow_data = flow_data.copy()
+            # OpenAI nodeからAPI Key関連を完全除去
+            for node in secure_flow_data["data"]["nodes"]:
+                if node["type"] == "OpenAIModel":
+                    # API Key関連のフィールドを除去
+                    node["data"].pop("api_key", None)
+            
+            flow_file = "yes_man_agent_flow_secure.json" 
+            with open(flow_file, 'w', encoding='utf-8') as f:
+                json.dump(secure_flow_data, f, indent=2, ensure_ascii=False)
+            
+            print(f"💾 Secure flow saved as {flow_file}")
+            print("📝 Manual steps:")
+            print("1. Go to LangFlow GUI: http://127.0.0.1:7860")
+            print("2. Click 'Import' or 'New Project'")
+            print(f"3. Import the file: {os.path.abspath(flow_file)}")
+            print("4. Manually set OpenAI API Key in the OpenAI node settings")
             return False
             
     except Exception as e:
