@@ -172,6 +172,10 @@ class WakeWordDetector:
                 confidence, detected_text = self._detect_wake_word(audio_data)
                 detection_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
                 
+                # 検出結果をログ表示（デバッグ用）
+                if detected_text and detected_text.strip():
+                    self.logger.debug(f"Detected: '{detected_text}' (confidence: {confidence:.2f})")
+                
                 # パフォーマンスメトリクス更新
                 self._update_metrics(detection_time_ms, confidence)
                 
@@ -199,7 +203,7 @@ class WakeWordDetector:
                     )
                 
                 # CPU負荷軽減のための待機
-                asyncio.sleep(0.1)
+                time.sleep(0.1)
                 
             except Exception as e:
                 self.logger.error(f"Detection loop error: {e}")
