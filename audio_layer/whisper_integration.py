@@ -85,7 +85,12 @@ class WhisperIntegration:
             self.logger.info(f"Initializing Whisper model: {self.config.model_size}")
             
             # whisperパッケージを使用してモデルロード
-            device = "cuda" if self.config.use_gpu else "cpu"
+            # GPU利用可能性をチェックしてからデバイス決定
+            import torch
+            use_cuda = self.config.use_gpu and torch.cuda.is_available()
+            device = "cuda" if use_cuda else "cpu"
+            
+            self.logger.info(f"Loading Whisper model on device: {device}")
             self.model = whisper.load_model(self.config.model_size, device=device)
             
             # GPU利用設定
