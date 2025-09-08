@@ -73,4 +73,6 @@ curl http://localhost:50021/speakers
 - feature/001-yes-man-fallout: Added Python 3.11 + JavaScript/TypeScript (Electron) + whispercpp[gpu], langflow, requests, electron, react
 
 <!-- 手動追加開始 -->
+## 開発注意事項
+- **実行制限**: `uv run yes-man` を自動実行禁止（ユーザーが手動実行のみ）
 <!-- 手動追加終了 -->
