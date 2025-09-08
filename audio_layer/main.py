@@ -37,7 +37,7 @@ from .database.models.agent_settings import AgentSettingsRepository
 class AudioLayerConfig:
     """音声レイヤー全体設定"""
     # Whisper設定
-    whisper_model_size: str = "large"
+    whisper_model_size: str = "medium"
     whisper_use_gpu: bool = True
     whisper_language: str = "ja"
     
