@@ -147,7 +147,9 @@ class WhisperIntegration:
                 }
                 
         except Exception as e:
+            import traceback
             self.logger.error(f"Transcription failed: {e}")
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             return {
                 "text": "",
                 "segments": [],
