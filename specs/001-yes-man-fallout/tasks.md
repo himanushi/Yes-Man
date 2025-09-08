@@ -60,23 +60,23 @@
 
 ## フェーズ 3.6: 顔UI実装
 - [x] T031 [P] 顔アニメーションコンポーネント in face_ui/src/components/FaceAnimation.tsx
-- [ ] T032 [P] 設定画面コンポーネント in face_ui/src/components/Settings.tsx
+- [x] T032 [P] 設定画面コンポーネント in face_ui/src/components/Settings.tsx
 - [x] T033 [P] システム状態管理 in face_ui/src/store/systemStore.ts
-- [ ] T034 Python-ElectronIPCブリッジ in face_ui/src/services/ipcBridge.ts
+- [x] T034 Python-ElectronIPCブリッジ in face_ui/src/services/ipcBridge.ts
 - [x] T035 メインElectronプロセス in face_ui/public/electron.js
 - [x] T036 顔UIメインアプリ in face_ui/src/App.tsx
 
 ## フェーズ 3.7: LangFlowエージェント設定
-- [ ] T037 [P] Yes-Manエージェントフロー設定 in langflow_flows/yes_man_agent.json
-- [ ] T038 [P] 計算ツール設定 in langflow_flows/calculator_tool.json
-- [ ] T039 [P] タイマーツール設定 in langflow_flows/timer_tool.json
-- [ ] T040 [P] 基本対話フロー設定 in langflow_flows/basic_conversation.json
+- [x] T037 [P] Yes-Manエージェントフロー設定 in langflow_flows/yes_man_agent.json
+- [x] T038 [P] 計算ツール設定 in langflow_flows/calculator_tool.json
+- [x] T039 [P] タイマーツール設定 in langflow_flows/timer_tool.json
+- [x] T040 [P] 基本対話フロー設定 in langflow_flows/basic_conversation.json
 
 ## フェーズ 3.8: システム統合
-- [ ] T041 IPC通信インターフェース実装 in audio_layer/ipc_server.py
-- [ ] T042 エラーハンドリングとログ設定
-- [ ] T043 システム全体の協調処理
-- [ ] T044 パフォーマンス最適化（CPU<30%, 応答<3秒）
+- [x] T041 IPC通信インターフェース実装 in audio_layer/ipc_server.py
+- [x] T042 エラーハンドリングとログ設定 in audio_layer/error_handler.py
+- [x] T043 システム全体の協調処理 in audio_layer/orchestrator.py
+- [x] T044 パフォーマンス最適化（CPU<30%, 応答<3秒）in audio_layer/performance_monitor.py
 
 ## フェーズ 3.9: 仕上げ
 - [ ] T045 [P] Unit tests for Whisper integration in tests/unit/test_whisper_integration.py
