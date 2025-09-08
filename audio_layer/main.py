@@ -571,7 +571,11 @@ async def main():
         await audio_manager.cleanup()
 
 
-if __name__ == "__main__":
-    # Yes-Man音声レイヤー実行
+def run_main():
+    """エントリーポイント用のラッパー関数"""
     exit_code = asyncio.run(main())
     sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    run_main()
