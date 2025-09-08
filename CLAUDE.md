@@ -45,7 +45,9 @@ pytest tests/ && ruff check audio_layer/
 cd face_ui && npm start
 
 # LangFlow起動
-langflow run --host 0.0.0.0 --port 7860
+uv run yes-man-langflow run --host 0.0.0.0 --port 7860
+# または
+uv run langflow run --host 0.0.0.0 --port 7860
 
 # VoiceVox確認
 curl http://localhost:50021/speakers
@@ -75,6 +77,7 @@ curl http://localhost:50021/speakers
 <!-- 手動追加開始 -->
 ## 開発注意事項
 - **実行制限**: `uv run yes-man` を自動実行禁止（ユーザーが手動実行のみ）
+- **依存関係管理**: `uv add` 使用禁止 - pyproject.tomlに直接追加
 
 ## API設定
 - **OpenAI API Key**: `.env`ファイルに`OPENAI_API_KEY=your_key_here`を設定
