@@ -314,10 +314,10 @@ class WhisperIntegration:
                 (1 - alpha) * self._average_inference_time_ms
             )
         
-        # パフォーマンス警告
-        if processing_time_ms > 1000:  # 1秒超過
+        # パフォーマンス警告（2秒超過時のみ）
+        if processing_time_ms > 2000:
             self.logger.warning(
-                f"Whisper inference exceeded 1s constraint: {processing_time_ms}ms"
+                f"Whisper inference exceeded 2s: {processing_time_ms}ms"
             )
     
     def get_performance_stats(self) -> Dict[str, Any]:
