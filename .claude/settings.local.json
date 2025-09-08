@@ -11,7 +11,19 @@
       "Bash(python.exe -m pytest --version)",
       "Bash(pip install:*)",
       "Bash(curl:*)",
-      "Bash(uv pip install:*)"
+      "Bash(uv pip install:*)",
+      "Bash(uv pip show:*)",
+      "Bash(powershell:*)",
+      "Bash(uv run:*)",
+      "Bash(where voicevox)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/ma5an/AppData/Local/**)",
+      "Bash(timeout 30 uv run yes-man)",
+      "Bash(timeout 60 uv run yes-man)",
+      "Bash(uv pip uninstall:*)",
+      "Bash(git clone:*)",
+      "Bash(where cmake)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []
