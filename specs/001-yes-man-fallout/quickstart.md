@@ -88,10 +88,10 @@ langflow run --host 0.0.0.0 --port 7860
 3. OpenAI APIキーを設定
 4. フローを保存・実行
 
-### 4. 音声レイヤー起動
+### 4. Yes-Man起動
 ```bash
-# 音声処理メインプロセス起動
-python audio_layer/main.py
+# Yes-Man音声対話システム起動
+uv run yes-man
 ```
 
 ### 5. 顔UI起動 (別ターミナル)
