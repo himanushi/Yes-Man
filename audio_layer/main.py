@@ -514,26 +514,35 @@ class AudioLayerManager:
 
 
 # グローバル停止フラグ
-_shutdown_event = asyncio.Event()
+_shutdown_event = None
 
 def signal_handler(signum, frame):
     """シグナルハンドラ"""
+    global _shutdown_event
     print(f"\nReceived signal {signum}, shutting down...")
-    _shutdown_event.set()
+    if _shutdown_event:
+        _shutdown_event.set()
+    # 強制終了も追加
+    import sys
+    sys.exit(0)
 
 
 async def main():
     """メイン実行関数"""
+    global _shutdown_event
+    _shutdown_event = asyncio.Event()
+    
     # 設定読み込み
     config = AudioLayerConfig()
     
     # 音声レイヤーマネージャー作成
     audio_manager = AudioLayerManager(config)
     
-    # シグナルハンドラ設定
-    signal.signal(signal.SIGINT, signal_handler)
-    if hasattr(signal, 'SIGTERM'):  # Windows対応
-        signal.signal(signal.SIGTERM, signal_handler)
+    # Windows環境ではシグナルハンドラは使用しない（KeyboardInterruptで処理）
+    if sys.platform != "win32":
+        signal.signal(signal.SIGINT, signal_handler)
+        if hasattr(signal, 'SIGTERM'):
+            signal.signal(signal.SIGTERM, signal_handler)
     
     try:
         # 初期化
@@ -551,8 +560,12 @@ async def main():
         print("Press Ctrl+C to stop...")
         
         # メインループ（Ctrl+C監視付き）
-        while audio_manager._is_running and not _shutdown_event.is_set():
-            await asyncio.sleep(1)
+        try:
+            while audio_manager._is_running and not _shutdown_event.is_set():
+                await asyncio.sleep(0.1)  # より短い間隔でチェック
+        except asyncio.CancelledError:
+            print("Main loop cancelled, shutting down...")
+            audio_manager._is_running = False
             
             # 統計表示（デバッグ用）
             if datetime.now().second % 30 == 0:  # 30秒毎
@@ -578,8 +591,36 @@ async def main():
 
 def run_main():
     """エントリーポイント用のラッパー関数"""
-    exit_code = asyncio.run(main())
-    sys.exit(exit_code)
+    try:
+        # Windows環境でCtrl+Cを確実に処理
+        if sys.platform == "win32":
+            # WindowsのEventLoopPolicyを設定
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            exit_code = loop.run_until_complete(main())
+            sys.exit(exit_code)
+        except KeyboardInterrupt:
+            print("\nKeyboard interrupt received, shutting down...")
+            # 全タスクをキャンセル
+            tasks = asyncio.all_tasks(loop)
+            for task in tasks:
+                task.cancel()
+            # ループを閉じる
+            loop.stop()
+            loop.close()
+            sys.exit(0)
+        finally:
+            try:
+                loop.close()
+            except:
+                pass
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received, shutting down...")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
