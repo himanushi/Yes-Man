@@ -22,6 +22,7 @@ import uuid
 # 音声レイヤーコンポーネント
 from .whisper_integration import WhisperIntegration, WhisperConfig
 from .wake_word_detector import WakeWordDetector, WakeWordConfig
+from .openwakeword_detector import YesManWakeWordDetector
 from .continuous_recognition import ContinuousRecognition, ContinuousRecognitionConfig
 from .voicevox_integration import VoiceVoxIntegration, VoiceVoxConfig
 from .audio_buffer import AudioBufferManager, AudioBufferConfig, AudioChunk
@@ -91,6 +92,7 @@ class AudioLayerManager:
         # コンポーネント
         self.whisper: Optional[WhisperIntegration] = None
         self.wake_word_detector: Optional[WakeWordDetector] = None
+        self.openwakeword_detector: Optional[YesManWakeWordDetector] = None
         self.continuous_recognition: Optional[ContinuousRecognition] = None
         self.voicevox: Optional[VoiceVoxIntegration] = None
         self.audio_buffer: Optional[AudioBufferManager] = None
@@ -156,7 +158,13 @@ class AudioLayerManager:
             )
             self.audio_buffer = AudioBufferManager(buffer_config)
             
-            # 3. ウェイクワード検出初期化
+            # 3. openWakeWord検出初期化
+            self.openwakeword_detector = YesManWakeWordDetector(
+                confidence_threshold=self.config.wake_word_confidence_threshold
+            )
+            self.logger.info("openWakeWord detector initialized")
+            
+            # 旧ウェイクワード検出（フォールバック用に保持）
             wake_word_config = WakeWordConfig(
                 wake_word=self.config.wake_word,
                 confidence_threshold=self.config.wake_word_confidence_threshold,
@@ -244,22 +252,22 @@ class AudioLayerManager:
             
             self.logger.info("Starting audio layer...")
             
-            # マイク入力開始 - wake_word_detectorに直接接続
+            # openWakeWord検出開始（独自のマイク入力使用）
+            def on_wake_word_detected(wake_word: str, confidence: float):
+                """openWakeWordコールバック"""
+                self.logger.info(f"Wake word detected: {wake_word} (confidence: {confidence:.3f})")
+                self._on_wake_word_detected()
+            
+            self.openwakeword_detector.start_detection(on_wake_word_detected)
+            
+            # 旧実装もフォールバックとして起動
             def on_audio_data(audio_data):
-                """マイクからの音声データを wake word detector に送信"""
-                if self.wake_word_detector:
-                    self.wake_word_detector.process_audio_chunk(audio_data)
-                # バッファにも追加
+                """マイクからの音声データを バッファに送信"""
                 if self.audio_buffer:
                     self.audio_buffer.add_audio_data(audio_data)
             
             if not self.microphone.start_recording(on_audio_data):
                 self.logger.error("Failed to start microphone recording")
-                return False
-            
-            # ウェイクワード検出開始
-            if not self.wake_word_detector.start_listening(self._wake_word_callback):
-                self.logger.error("Failed to start wake word detection")
                 return False
             
             # 会話セッション作成
@@ -288,7 +296,11 @@ class AudioLayerManager:
             if self.microphone:
                 self.microphone.stop_recording()
             
-            # ウェイクワード検出停止
+            # openWakeWord検出停止
+            if self.openwakeword_detector:
+                self.openwakeword_detector.stop_detection()
+            
+            # 旧ウェイクワード検出停止
             if self.wake_word_detector:
                 self.wake_word_detector.stop_listening()
             
