@@ -44,10 +44,8 @@ pytest tests/ && ruff check audio_layer/
 # 顔UI開発
 cd face_ui && npm start
 
-# LangFlow起動
-uv run yes-man-langflow run --host 0.0.0.0 --port 7860
-# または
-uv run langflow run --host 0.0.0.0 --port 7860
+# LangFlow起動（Ctrl+C対応版）
+uv run yes-man-start-langflow --host 127.0.0.1 --port 7860
 
 # VoiceVox確認
 curl http://localhost:50021/speakers
