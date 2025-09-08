@@ -371,6 +371,21 @@ class DatabaseInitializer:
             return {"error": str(e)}
 
 
+def init_database(db_path: str = "yes_man.db", force_recreate: bool = False) -> bool:
+    """
+    データベース初期化の便利関数
+    
+    Args:
+        db_path: データベースファイルパス
+        force_recreate: 強制再作成
+        
+    Returns:
+        bool: 初期化成功
+    """
+    initializer = DatabaseInitializer(db_path)
+    return initializer.initialize_database(force_recreate)
+
+
 def main():
     """
     データベース初期化メインエントリーポイント
