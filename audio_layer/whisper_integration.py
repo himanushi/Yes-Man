@@ -131,6 +131,9 @@ class WhisperIntegration:
             raise RuntimeError("Whisper model not initialized")
         
         start_time = datetime.now()
+        audio_length = len(audio_data) / self.config.sample_rate
+        
+        self.logger.info(f"Starting speech recognition ({audio_length:.1f}s audio)")
         
         try:
             with self._processing_lock:
@@ -153,6 +156,11 @@ class WhisperIntegration:
                 # 処理時間計測
                 processing_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
                 self._update_performance_metrics(processing_time_ms)
+                
+                # 認識結果のログ表示
+                recognized_text = result.get("text", "").strip()
+                confidence = self._calculate_confidence(result)
+                self.logger.info(f"Speech recognition completed ({processing_time_ms}ms): '{recognized_text}' (confidence: {confidence:.2f})")
                 
                 # 結果構築
                 return {
