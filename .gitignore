@@ -1,0 +1,148 @@
+# Yes-Man音声対話アシスタント .gitignore
+
+# === 憲法IV: プライバシーファースト ===
+# 音声データ除外（ディスク保存禁止）
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.aac
+*.wma
+audio_recordings/
+temp_audio/
+voice_samples/
+
+# データベースファイル除外
+yes_man.db
+yes_man_*.db
+*.sqlite
+*.sqlite3
+
+# ログファイル除外
+logs/
+*.log
+audio_layer.log
+langflow_integration.log
+database.log
+
+# === Python標準除外 ===
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 仮想環境
+yes_man_env/
+venv/
+env/
+ENV/
+
+# === Node.js/Electron ===
+face_ui/node_modules/
+face_ui/build/
+face_ui/dist/
+face_ui/.env.local
+face_ui/.env.development.local
+face_ui/.env.test.local
+face_ui/.env.production.local
+*.tgz
+*.tar.gz
+
+# Electron 配布ファイル
+face_ui/out/
+face_ui/app/
+
+# === Whisper.cpp関連 ===
+# モデルファイル除外
+*.bin
+models/
+whisper_models/
+ggml-*.bin
+
+# === VoiceVox関連 ===
+# VoiceVoxエンジンファイル
+voicevox_core/
+*.vvpp
+*.vvm
+
+# === LangFlow関連 ===
+langflow.db
+.langflow/
+flows_backup/
+
+# === 機密データ除外 ===
+.env
+.env.local
+.env.production
+config.json
+secrets.json
+
+# API キー
+*_key.txt
+*_secret.txt
+api_keys/
+credentials/
+
+# === IDE設定 ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === テスト ===
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# === バックアップ ===
+backup/
+*.backup
+*_backup_*.db
+yes_man_backup_*.db
+
+# === 一時ファイル ===
+temp/
+tmp/
+scratch/
+debug/
+test_output/
+
+# === ランタイム ===
+*.pid
+*.lock

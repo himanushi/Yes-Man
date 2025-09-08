@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/create-new-feature.sh:*)",
+      "WebSearch",
+      "Bash(scripts/setup-plan.sh:*)",
+      "Bash(scripts/update-agent-context.sh:*)",
+      "Bash(scripts/check-task-prerequisites.sh:*)",
+      "Bash(tree:*)",
+      "Bash(python -m pytest tests/contract/test_audio_api_wake_word.py -v)",
+      "Bash(python.exe -m pytest --version)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)",
+      "Bash(uv pip install:*)",
+      "Bash(uv pip show:*)",
+      "Bash(powershell:*)",
+      "Bash(uv run:*)",
+      "Bash(where voicevox)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/ma5an/AppData/Local/**)",
+      "Bash(timeout 30 uv run yes-man)",
+      "Bash(timeout 60 uv run yes-man)",
+      "Bash(uv pip uninstall:*)",
+      "Bash(git clone:*)",
+      "Bash(where cmake)",
+      "Bash(make:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(python scripts/check_voicevox.py:*)",
+      "Bash(dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

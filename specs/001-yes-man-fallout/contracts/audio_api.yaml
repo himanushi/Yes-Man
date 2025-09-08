@@ -1,0 +1,252 @@
+openapi: 3.0.3
+info:
+  title: Yes-Man Audio Layer API
+  description: 音声処理とウェイクワード検出のためのAPI
+  version: 1.0.0
+  
+servers:
+  - url: http://localhost:8001
+    description: ローカル音声レイヤーAPI
+    
+paths:
+  /audio/start_listening:
+    post:
+      summary: 音声監視開始
+      description: ウェイクワード検出を開始する
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wake_word:
+                  type: string
+                  default: "Yes-Man"
+                  description: 検出対象のウェイクワード
+                confidence_threshold:
+                  type: number
+                  minimum: 0.0
+                  maximum: 1.0
+                  default: 0.8
+                  description: 検出信頼度の閾値
+      responses:
+        '200':
+          description: 監視開始成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: ["listening"]
+                  session_id:
+                    type: string
+                    format: uuid
+        '400':
+          description: 無効な設定パラメータ
+
+  /audio/wake_word_detected:
+    get:
+      summary: ウェイクワード検出状態確認
+      description: ウェイクワードが検出されたかチェック
+      responses:
+        '200':
+          description: 検出状態の応答
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detected:
+                    type: boolean
+                  confidence:
+                    type: number
+                  timestamp:
+                    type: string
+                    format: date-time
+                  audio_buffer_seconds:
+                    type: number
+                    description: 検出時点の音声バッファ長
+
+  /audio/continuous_recognition:
+    post:
+      summary: 継続音声認識開始
+      description: ウェイクワード検出後の継続音声認識
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_duration_seconds:
+                  type: integer
+                  default: 30
+                  description: 最大録音時間
+                silence_timeout_seconds:
+                  type: integer
+                  default: 5
+                  description: 無音での自動終了時間
+      responses:
+        '200':
+          description: 音声認識結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transcribed_text:
+                    type: string
+                    description: 認識されたテキスト
+                  confidence:
+                    type: number
+                  duration_seconds:
+                    type: number
+                  ended_by:
+                    type: string
+                    enum: ["silence", "timeout", "manual"]
+
+  /audio/text_to_speech:
+    post:
+      summary: 音声合成実行
+      description: VoiceVoxを使用した音声合成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: 合成対象テキスト
+                speaker_id:
+                  type: integer
+                  default: 1
+                  description: VoiceVoxスピーカーID
+                speed:
+                  type: number
+                  default: 1.0
+                  minimum: 0.5
+                  maximum: 2.0
+                volume:
+                  type: number
+                  default: 1.0
+                  minimum: 0.0
+                  maximum: 2.0
+      responses:
+        '200':
+          description: 音声合成完了
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_file_path:
+                    type: string
+                    description: 生成された音声ファイルパス
+                  duration_seconds:
+                    type: number
+                  speaker_name:
+                    type: string
+        '400':
+          description: テキストが空または無効なパラメータ
+        '503':
+          description: VoiceVoxサービス利用不可
+
+  /audio/play_audio:
+    post:
+      summary: 音声再生
+      description: 生成された音声ファイルを再生
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - audio_file_path
+              properties:
+                audio_file_path:
+                  type: string
+                volume:
+                  type: number
+                  default: 1.0
+                  minimum: 0.0
+                  maximum: 2.0
+      responses:
+        '200':
+          description: 再生開始
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: ["playing"]
+                  duration_seconds:
+                    type: number
+
+  /audio/stop_all:
+    post:
+      summary: 全音声処理停止
+      description: 監視、認識、再生をすべて停止
+      responses:
+        '200':
+          description: 停止完了
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: ["stopped"]
+                  stopped_processes:
+                    type: array
+                    items:
+                      type: string
+
+  /audio/status:
+    get:
+      summary: 音声システム状態取得
+      description: 現在の音声処理状態を取得
+      responses:
+        '200':
+          description: システム状態
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current_state:
+                    type: string
+                    enum: ["idle", "listening", "recognizing", "speaking"]
+                  cpu_usage_percent:
+                    type: number
+                    description: CPU使用率
+                  memory_usage_mb:
+                    type: number
+                    description: メモリ使用量
+                  whisper_model_loaded:
+                    type: boolean
+                  voicevox_available:
+                    type: boolean
+
+components:
+  schemas:
+    AudioError:
+      type: object
+      properties:
+        error:
+          type: string
+        error_code:
+          type: string
+          enum: ["WHISPER_ERROR", "VOICEVOX_ERROR", "AUDIO_DEVICE_ERROR", "TIMEOUT_ERROR"]
+        details:
+          type: string

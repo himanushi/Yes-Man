@@ -1,0 +1,138 @@
+{
+  "name": "Yes-Man Calculator Tool",
+  "description": "Yes-Man音声アシスタント用計算ツール",
+  "version": "1.0.0",
+  "author": "Yes-Man Project",
+  "tool_type": "calculator",
+  "nodes": [
+    {
+      "id": "calculator_input",
+      "type": "TextInput",
+      "position": { "x": 100, "y": 200 },
+      "data": {
+        "input_text": "",
+        "input_name": "expression",
+        "input_description": "計算式を入力してください（例: 2 + 3 * 4, sqrt(16), 2^3）"
+      }
+    },
+    {
+      "id": "expression_validator",
+      "type": "PythonREPL",
+      "position": { "x": 300, "y": 200 },
+      "data": {
+        "name": "validator",
+        "description": "数式の安全性を検証します",
+        "code": "import re\nimport ast\nimport operator\n\n# 安全な操作のみを許可\nSAFE_OPERATORS = {\n    ast.Add: operator.add,\n    ast.Sub: operator.sub,\n    ast.Mult: operator.mul,\n    ast.Div: operator.truediv,\n    ast.Pow: operator.pow,\n    ast.Mod: operator.mod,\n    ast.USub: operator.neg,\n    ast.UAdd: operator.pos,\n}\n\n# 安全な関数\nSAFE_FUNCTIONS = {\n    'abs': abs,\n    'round': round,\n    'min': min,\n    'max': max,\n    'sum': sum,\n    'sqrt': lambda x: x ** 0.5,\n    'pow': pow,\n    'sin': lambda x: __import__('math').sin(x),\n    'cos': lambda x: __import__('math').cos(x),\n    'tan': lambda x: __import__('math').tan(x),\n    'log': lambda x: __import__('math').log(x),\n    'log10': lambda x: __import__('math').log10(x),\n    'pi': __import__('math').pi,\n    'e': __import__('math').e,\n}\n\ndef validate_expression(expr):\n    \"\"\"数式の安全性を検証\"\"\"\n    # 危険なパターンをチェック\n    dangerous_patterns = [\n        r'__.*__',  # dunderメソッド\n        r'import',   # import文\n        r'exec',     # exec関数\n        r'eval',     # eval関数\n        r'open',     # ファイル操作\n        r'input',    # ユーザー入力\n        r'print',    # 出力（計算には不要）\n    ]\n    \n    for pattern in dangerous_patterns:\n        if re.search(pattern, expr, re.IGNORECASE):\n            return False, f\"危険なパターンが検出されました: {pattern}\"\n    \n    # 文字数制限\n    if len(expr) > 200:\n        return False, \"数式が長すぎます（200文字以内）\"\n    \n    return True, \"OK\"\n\ndef safe_eval(expr):\n    \"\"\"安全な数式評価\"\"\"\n    try:\n        # 基本的な前処理\n        expr = expr.replace('^', '**')  # べき乗記号の変換\n        expr = expr.replace('÷', '/')    # 除算記号の変換\n        expr = expr.replace('×', '*')    # 乗算記号の変換\n        \n        # AST解析による安全性チェック\n        tree = ast.parse(expr, mode='eval')\n        \n        def _eval_node(node):\n            if isinstance(node, ast.Expression):\n                return _eval_node(node.body)\n            elif isinstance(node, ast.Constant):  # Python 3.8+\n                return node.value\n            elif isinstance(node, ast.Num):  # Python 3.7以下の互換性\n                return node.n\n            elif isinstance(node, ast.BinOp):\n                left = _eval_node(node.left)\n                right = _eval_node(node.right)\n                op = SAFE_OPERATORS.get(type(node.op))\n                if op is None:\n                    raise ValueError(f\"不許可な演算子: {type(node.op)}\")\n                return op(left, right)\n            \n            elif isinstance(node, ast.UnaryOp):\n                operand = _eval_node(node.operand)\n                op = SAFE_OPERATORS.get(type(node.op))\n                if op is None:\n                    raise ValueError(f\"不許可な単項演算子: {type(node.op)}\")\n                return op(operand)\n            \n            elif isinstance(node, ast.Call):\n                func_name = node.func.id if isinstance(node.func, ast.Name) else None\n                if func_name not in SAFE_FUNCTIONS:\n                    raise ValueError(f\"不許可な関数: {func_name}\")\n                \n                args = [_eval_node(arg) for arg in node.args]\n                return SAFE_FUNCTIONS[func_name](*args)\n            \n            elif isinstance(node, ast.Name):\n                # 定数のみ許可\n                if node.id in SAFE_FUNCTIONS:\n                    return SAFE_FUNCTIONS[node.id]\n                else:\n                    raise ValueError(f\"不許可な変数: {node.id}\")\n            \n            else:\n                raise ValueError(f\"不許可なノードタイプ: {type(node)}\")\n        \n        result = _eval_node(tree)\n        \n        # 結果の妥当性チェック\n        if isinstance(result, (int, float, complex)):\n            # 無限大、NaNのチェック\n            if isinstance(result, float):\n                if __import__('math').isnan(result):\n                    return None, \"計算結果がNaN（非数）です\"\n                if __import__('math').isinf(result):\n                    return None, \"計算結果が無限大です\"\n            \n            return result, None\n        else:\n            return None, f\"予期しない結果タイプ: {type(result)}\"\n    \n    except ZeroDivisionError:\n        return None, \"ゼロで割ることはできません\"\n    except OverflowError:\n        return None, \"計算結果が大きすぎます\"\n    except ValueError as e:\n        return None, str(e)\n    except Exception as e:\n        return None, f\"計算エラー: {str(e)}\"\n\n# メイン処理\nexpression = input().strip()\n\nif not expression:\n    result = {\n        'success': False,\n        'error': 'はい、計算式を入力してください！',\n        'expression': '',\n        'result': None\n    }\nelse:\n    # バリデーション\n    is_valid, validation_msg = validate_expression(expression)\n    \n    if not is_valid:\n        result = {\n            'success': False,\n            'error': f'申し訳ありません！{validation_msg}',\n            'expression': expression,\n            'result': None\n        }\n    else:\n        # 計算実行\n        calc_result, error = safe_eval(expression)\n        \n        if error:\n            result = {\n                'success': False,\n                'error': f'はい、計算でエラーが発生しました！{error}',\n                'expression': expression,\n                'result': None\n            }\n        else:\n            # 結果のフォーマット\n            if isinstance(calc_result, float):\n                if calc_result.is_integer():\n                    formatted_result = str(int(calc_result))\n                else:\n                    formatted_result = f\"{calc_result:.10g}\"  # 有効数字10桁\n            else:\n                formatted_result = str(calc_result)\n            \n            result = {\n                'success': True,\n                'error': None,\n                'expression': expression,\n                'result': calc_result,\n                'formatted_result': formatted_result,\n                'response': f'はい！ {expression} = {formatted_result} です！'\n            }\n\nprint(result)"
+      }
+    },
+    {
+      "id": "formatter",
+      "type": "PythonREPL",
+      "position": { "x": 500, "y": 200 },
+      "data": {
+        "name": "formatter",
+        "description": "計算結果をYes-Man風にフォーマット",
+        "code": "import json\n\ntry:\n    calc_data = json.loads(input())\nexcept:\n    calc_data = {'success': False, 'error': '入力データの解析に失敗しました'}\n\nif calc_data['success']:\n    expression = calc_data['expression']\n    result = calc_data['formatted_result']\n    \n    # Yes-Man風の応答生成\n    responses = [\n        f\"はい！計算結果をお伝えします！{expression} = {result} です！\",\n        f\"もちろんです！{expression} の答えは {result} ですね！\",\n        f\"はい、計算完了です！{expression} = {result} となります！\",\n        f\"計算結果をどうぞ！{expression} は {result} です！\",\n    ]\n    \n    # 結果の大きさに応じてコメントを追加\n    try:\n        num_result = float(calc_data['result'])\n        if abs(num_result) >= 1000000:\n            comment = \"（とても大きな数値ですね！）\"\n        elif abs(num_result) < 0.001 and num_result != 0:\n            comment = \"（とても小さな数値ですね！）\"\n        elif num_result == 0:\n            comment = \"（ゼロですね！）\"\n        elif num_result < 0:\n            comment = \"（マイナスの値ですね！）\"\n        else:\n            comment = \"\"\n    except:\n        comment = \"\"\n    \n    # ランダムに応答を選択（簡易実装）\n    import time\n    response_index = int(time.time()) % len(responses)\n    final_response = responses[response_index] + comment\n    \nelse:\n    # エラー時のYes-Man風応答\n    error_msg = calc_data.get('error', '不明なエラーが発生しました')\n    final_response = f\"申し訳ありません！{error_msg} でも、きっと次は上手くいきますよ！\"\n\noutput = {\n    'response': final_response,\n    'success': calc_data['success'],\n    'original_data': calc_data\n}\n\nprint(output)"
+      }
+    },
+    {
+      "id": "calculator_output",
+      "type": "TextOutput",
+      "position": { "x": 700, "y": 200 },
+      "data": {
+        "output_name": "calculator_result",
+        "output_description": "計算結果とYes-Man風の応答"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "calc_edge_1",
+      "source": "calculator_input",
+      "sourceHandle": "output",
+      "target": "expression_validator",
+      "targetHandle": "input"
+    },
+    {
+      "id": "calc_edge_2",
+      "source": "expression_validator",
+      "sourceHandle": "output",
+      "target": "formatter",
+      "targetHandle": "input"
+    },
+    {
+      "id": "calc_edge_3",
+      "source": "formatter",
+      "sourceHandle": "output",
+      "target": "calculator_output",
+      "targetHandle": "input"
+    }
+  ],
+  "settings": {
+    "tool_name": "calculator",
+    "tool_description": "Yes-Man用安全な計算ツール",
+    "tool_category": "utility",
+    "security": {
+      "safe_evaluation": true,
+      "input_validation": true,
+      "result_limits": {
+        "max_result_length": 50,
+        "max_precision": 10
+      }
+    },
+    "features": {
+      "basic_arithmetic": true,
+      "advanced_functions": true,
+      "trigonometry": true,
+      "logarithms": true,
+      "constants": true
+    },
+    "supported_operations": [
+      "四則演算 (+, -, *, /)",
+      "べき乗 (^, **)",
+      "平方根 (sqrt)",
+      "三角関数 (sin, cos, tan)",
+      "対数関数 (log, log10)",
+      "数学定数 (pi, e)",
+      "基本関数 (abs, round, min, max)"
+    ]
+  },
+  "examples": [
+    {
+      "input": "2 + 3 * 4",
+      "expected_output": "はい！計算結果をお伝えします！2 + 3 * 4 = 14 です！",
+      "description": "基本的な四則演算"
+    },
+    {
+      "input": "sqrt(16)",
+      "expected_output": "もちろんです！sqrt(16) の答えは 4 ですね！",
+      "description": "平方根の計算"
+    },
+    {
+      "input": "2^8",
+      "expected_output": "はい、計算完了です！2^8 = 256 となります！",
+      "description": "べき乗の計算"
+    },
+    {
+      "input": "sin(pi/2)",
+      "expected_output": "計算結果をどうぞ！sin(pi/2) は 1 です！",
+      "description": "三角関数と数学定数"
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-09-08T00:00:00Z",
+    "updated_at": "2025-09-08T00:00:00Z",
+    "version": "1.0.0",
+    "compatibility": {
+      "langflow_version": ">=1.0.0",
+      "python_version": ">=3.8"
+    },
+    "dependencies": {
+      "math": "builtin",
+      "ast": "builtin",
+      "operator": "builtin",
+      "re": "builtin",
+      "json": "builtin"
+    }
+  }
+}

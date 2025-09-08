@@ -1,0 +1,204 @@
+/**
+ * Yes-Man 顔アニメーション スタイル
+ * 
+ * Fallout New Vegas風のサイバーパンクデザイン
+ */
+
+.face-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(0, 20, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.face-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.face-svg {
+  drop-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+  transition: all 0.3s ease-in-out;
+}
+
+/* 状態別スタイル */
+.face-state-idle .face-svg {
+  filter: drop-shadow(0 0 20px rgba(0, 255, 65, 0.4));
+}
+
+.face-state-listening .face-svg {
+  filter: drop-shadow(0 0 25px rgba(65, 255, 0, 0.6));
+  animation: listening-pulse 2s ease-in-out infinite;
+}
+
+.face-state-thinking .face-svg {
+  filter: drop-shadow(0 0 25px rgba(255, 170, 0, 0.5));
+  animation: thinking-flicker 1s ease-in-out infinite;
+}
+
+.face-state-speaking .face-svg {
+  filter: drop-shadow(0 0 30px rgba(0, 153, 255, 0.6));
+  animation: speaking-glow 0.5s ease-in-out infinite alternate;
+}
+
+.face-state-error .face-svg {
+  filter: drop-shadow(0 0 25px rgba(255, 0, 0, 0.7));
+  animation: error-flash 0.3s ease-in-out infinite alternate;
+}
+
+.face-state-sleeping .face-svg {
+  filter: drop-shadow(0 0 10px rgba(102, 102, 102, 0.3));
+  opacity: 0.6;
+  animation: sleeping-fade 3s ease-in-out infinite alternate;
+}
+
+/* アニメーション定義 */
+@keyframes listening-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 25px rgba(65, 255, 0, 0.6));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 35px rgba(65, 255, 0, 0.8));
+  }
+}
+
+@keyframes thinking-flicker {
+  0%, 90%, 100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes speaking-glow {
+  from {
+    filter: drop-shadow(0 0 30px rgba(0, 153, 255, 0.6));
+  }
+  to {
+    filter: drop-shadow(0 0 40px rgba(0, 153, 255, 0.9));
+  }
+}
+
+@keyframes error-flash {
+  from {
+    filter: drop-shadow(0 0 25px rgba(255, 0, 0, 0.7));
+  }
+  to {
+    filter: drop-shadow(0 0 35px rgba(255, 0, 0, 1));
+  }
+}
+
+@keyframes sleeping-fade {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0.3;
+  }
+}
+
+/* 状態テキスト */
+.state-text {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 10px;
+  text-shadow: 0 0 10px currentColor;
+  
+  /* Fallout スタイルのテキスト効果 */
+  background: linear-gradient(45deg, currentColor, rgba(255, 255, 255, 0.3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  
+  animation: text-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes text-glow {
+  from {
+    text-shadow: 0 0 10px currentColor;
+  }
+  to {
+    text-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+}
+
+/* デバッグ情報 */
+.debug-info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  line-height: 1.4;
+  border: 1px solid #00ff41;
+  min-width: 150px;
+}
+
+.debug-info div {
+  margin: 2px 0;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 480px) {
+  .face-container {
+    padding: 10px;
+    gap: 15px;
+  }
+  
+  .state-text {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+}
+
+/* パフォーマンス最適化 */
+.face-animation * {
+  will-change: transform, opacity;
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+  .face-svg {
+    filter: contrast(1.5) brightness(1.2);
+  }
+  
+  .state-text {
+    text-shadow: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+/* アニメーション無効化設定 */
+@media (prefers-reduced-motion: reduce) {
+  .face-svg {
+    animation: none !important;
+  }
+  
+  .state-text {
+    animation: none !important;
+  }
+  
+  * {
+    transition: none !important;
+  }
+}

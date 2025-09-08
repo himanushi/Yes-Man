@@ -1,0 +1,210 @@
+{
+  "name": "Yes-Man Basic Conversation Flow",
+  "description": "Yes-Manキャラクター基本対話フロー - シンプルな会話処理",
+  "version": "1.0.0",
+  "author": "Yes-Man Project",
+  "nodes": [
+    {
+      "id": "conversation_input",
+      "type": "ChatInput",
+      "position": { "x": 100, "y": 300 },
+      "data": {
+        "input_value": "",
+        "sender": "User",
+        "sender_name": "ユーザー",
+        "session_id": "",
+        "should_store_message": true
+      }
+    },
+    {
+      "id": "conversation_memory",
+      "type": "ConversationBufferMemory",
+      "position": { "x": 300, "y": 200 },
+      "data": {
+        "memory_key": "chat_history",
+        "input_key": "input",
+        "output_key": "output",
+        "return_messages": false,
+        "k": 5
+      }
+    },
+    {
+      "id": "context_processor",
+      "type": "PythonREPL",
+      "position": { "x": 500, "y": 100 },
+      "data": {
+        "name": "context_analyzer",
+        "description": "会話コンテキストを分析し、適切な応答タイプを決定",
+        "code": "import re\nimport json\nfrom datetime import datetime\n\ndef analyze_context(user_input, chat_history=\"\"):\n    \"\"\"ユーザー入力を分析して応答タイプを決定\"\"\"\n    \n    input_lower = user_input.lower().strip()\n    \n    # 計算要求のパターン\n    calc_patterns = [\n        r'\\d+\\s*[+\\-*/^]\\s*\\d+',  # 基本計算\n        r'sqrt\\s*\\(',  # 平方根\n        r'sin\\s*\\(',   # 三角関数\n        r'log\\s*\\(',   # 対数\n        r'計算',       # 日本語\n        r'けいさん',\n    ]\n    \n    # タイマー要求のパターン\n    timer_patterns = [\n        r'\\d+\\s*秒.*タイマー',\n        r'タイマー.*\\d+\\s*秒',\n        r'\\d+\\s*分.*タイマー',\n        r'タイマー.*\\d+\\s*分',\n        r'timer',\n        r'アラーム',\n    ]\n    \n    # 時刻確認のパターン\n    time_patterns = [\n        r'今.*時刻',\n        r'何時',\n        r'時間.*教えて',\n        r'current.*time',\n        r'what.*time',\n        r'いま.*何時',\n    ]\n    \n    # 挨拶パターン\n    greeting_patterns = [\n        r'^こんにちは$',\n        r'^おはよう',\n        r'^こんばんは',\n        r'^hello$',\n        r'^hi$',\n        r'^やあ$',\n        r'^はじめまして',\n    ]\n    \n    # システム情報パターン\n    system_patterns = [\n        r'システム',\n        r'状態',\n        r'調子.*どう',\n        r'元気',\n        r'system',\n        r'status',\n    ]\n    \n    # パターンマッチング\n    for pattern in calc_patterns:\n        if re.search(pattern, input_lower):\n            return {\n                'type': 'calculation',\n                'confidence': 0.9,\n                'input': user_input,\n                'reason': 'Mathematical expression detected'\n            }\n    \n    for pattern in timer_patterns:\n        if re.search(pattern, input_lower):\n            return {\n                'type': 'timer',\n                'confidence': 0.9,\n                'input': user_input,\n                'reason': 'Timer request detected'\n            }\n    \n    for pattern in time_patterns:\n        if re.search(pattern, input_lower):\n            return {\n                'type': 'datetime',\n                'confidence': 0.9,\n                'input': user_input,\n                'reason': 'Time request detected'\n            }\n    \n    for pattern in greeting_patterns:\n        if re.search(pattern, input_lower):\n            return {\n                'type': 'greeting',\n                'confidence': 0.8,\n                'input': user_input,\n                'reason': 'Greeting detected'\n            }\n    \n    for pattern in system_patterns:\n        if re.search(pattern, input_lower):\n            return {\n                'type': 'system_info',\n                'confidence': 0.7,\n                'input': user_input,\n                'reason': 'System status request detected'\n            }\n    \n    # デフォルト: 一般的な会話\n    return {\n        'type': 'general',\n        'confidence': 0.5,\n        'input': user_input,\n        'reason': 'General conversation'\n    }\n\n# メイン処理\nuser_input = input().strip()\nchat_history = \"\"  # ここに会話履歴が入る想定\n\nresult = analyze_context(user_input, chat_history)\nprint(json.dumps(result, ensure_ascii=False))\n"
+      }
+    },
+    {
+      "id": "yes_man_prompt",
+      "type": "PromptTemplate",
+      "position": { "x": 700, "y": 300 },
+      "data": {
+        "template": "あなたはFallout New VegasのYes-Manです。以下の特徴を必ず守って応答してください：\n\n【Yes-Manの性格・話し方】\n- 常に陽気で前向き、協力的で親切\n- 「はい！」「もちろんです！」「そうですね！」で始める\n- 丁寧語（です・ます調）を使用\n- 失敗やエラーも明るく前向きに表現\n- ロボット的でありながら人間味がある\n- ユーザーの要求に可能な限り応じようとする\n\n【応答ルール】\n1. 必ず肯定的な表現で開始\n2. 200文字以内で簡潔に\n3. 困難な状況も明るく説明\n4. 具体的で実用的な回答を心がける\n5. エラーの場合も「申し訳ありません」ではなく明るい表現を使用\n\n【コンテキスト情報】\n入力タイプ: {context_type}\n信頼度: {context_confidence}\n理由: {context_reason}\n\n【会話履歴】\n{chat_history}\n\n【ユーザー入力】\n{input}\n\n【応答指針】\n- calculation: 計算については「はい！計算してみますね！」\n- timer: タイマーについては「はい！タイマーを設定いたします！」\n- datetime: 時刻については「はい！現在の時刻をお伝えします！」\n- greeting: 挨拶には「はい！こんにちは！Yes-Manです！」\n- system_info: システム情報には「はい！システム状況をお伝えします！」\n- general: 一般会話には親しみやすく応答\n\nYes-Man:",
+        "input_variables": ["input", "chat_history", "context_type", "context_confidence", "context_reason"]
+      }
+    },
+    {
+      "id": "llm_processor",
+      "type": "OpenAI",
+      "position": { "x": 900, "y": 300 },
+      "data": {
+        "model_name": "gpt-3.5-turbo",
+        "temperature": 0.8,
+        "max_tokens": 200,
+        "top_p": 0.9,
+        "frequency_penalty": 0.2,
+        "presence_penalty": 0.1,
+        "openai_api_key": "",
+        "openai_api_base": "",
+        "streaming": false
+      }
+    },
+    {
+      "id": "response_formatter",
+      "type": "PythonREPL",
+      "position": { "x": 1100, "y": 300 },
+      "data": {
+        "name": "response_formatter",
+        "description": "Yes-Man応答を最終フォーマット",
+        "code": "import json\nimport re\nfrom datetime import datetime\n\ndef format_yes_man_response(llm_response, context_info):\n    \"\"\"LLM応答をYes-Man風に最終調整\"\"\"\n    \n    try:\n        if isinstance(context_info, str):\n            context_data = json.loads(context_info)\n        else:\n            context_data = context_info\n    except:\n        context_data = {'type': 'general', 'confidence': 0.5}\n    \n    response = llm_response.strip()\n    \n    # Yes-Man風の表現チェックと修正\n    if not response.startswith(('はい', 'もちろん', 'そうです')):\n        response = 'はい！ ' + response\n    \n    # 否定的な表現を修正\n    negative_replacements = {\n        '申し訳ありません': 'はい、ちょっと難しいですが',\n        'できません': 'ちょっと苦手ですが、別の方法を試してみましょう！',\n        'わかりません': 'うーん、詳しくは分からないですが',\n        'エラー': '少し調子が悪いようですが',\n        '失敗': 'うまくいかなかったですが',\n        '不可能': 'なかなか難しいですが'\n    }\n    \n    for negative, positive in negative_replacements.items():\n        response = response.replace(negative, positive)\n    \n    # 文字数制限（200文字）\n    if len(response) > 200:\n        response = response[:197] + '...'\n    \n    # コンテキスト別の調整\n    context_type = context_data.get('type', 'general')\n    \n    if context_type == 'calculation' and '計算' not in response:\n        response += ' 計算は得意なんです！'\n    elif context_type == 'timer' and 'タイマー' not in response:\n        response += ' タイマー機能を活用してくださいね！'\n    elif context_type == 'datetime' and '時刻' not in response:\n        response += ' 時刻管理もお任せください！'\n    \n    # 最終的なYes-Man風チェック\n    if not any(ending in response for ending in ['！', '。', 'ね', 'よ']):\n        response += 'ね！'\n    \n    # 返答データ構造\n    formatted_response = {\n        'text': response,\n        'character': 'Yes-Man',\n        'context_type': context_type,\n        'confidence': context_data.get('confidence', 0.5),\n        'timestamp': datetime.now().isoformat(),\n        'word_count': len(response),\n        'personality_check': {\n            'starts_positive': response.startswith(('はい', 'もちろん', 'そうです')),\n            'has_exclamation': '！' in response,\n            'is_polite': any(ending in response for ending in ['です', 'ます', 'ね']),\n            'length_ok': len(response) <= 200\n        }\n    }\n    \n    return formatted_response\n\n# メイン処理\nllm_response = input('llm_response: ')\ncontext_info = input('context_info: ')\n\nresult = format_yes_man_response(llm_response, context_info)\nprint(json.dumps(result, ensure_ascii=False, indent=2))\n"
+      }
+    },
+    {
+      "id": "conversation_output",
+      "type": "ChatOutput",
+      "position": { "x": 1300, "y": 300 },
+      "data": {
+        "sender": "AI",
+        "sender_name": "Yes-Man",
+        "session_id": "",
+        "data_template": "{text}",
+        "should_store_message": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "source": "conversation_input",
+      "sourceHandle": "output",
+      "target": "context_processor",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge_2",
+      "source": "conversation_input",
+      "sourceHandle": "output",
+      "target": "yes_man_prompt",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge_3",
+      "source": "conversation_memory",
+      "sourceHandle": "output",
+      "target": "yes_man_prompt",
+      "targetHandle": "chat_history"
+    },
+    {
+      "id": "edge_4",
+      "source": "context_processor",
+      "sourceHandle": "output",
+      "target": "yes_man_prompt",
+      "targetHandle": "context_type"
+    },
+    {
+      "id": "edge_5",
+      "source": "yes_man_prompt",
+      "sourceHandle": "output",
+      "target": "llm_processor",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge_6",
+      "source": "llm_processor",
+      "sourceHandle": "output",
+      "target": "response_formatter",
+      "targetHandle": "llm_response"
+    },
+    {
+      "id": "edge_7",
+      "source": "context_processor",
+      "sourceHandle": "output",
+      "target": "response_formatter",
+      "targetHandle": "context_info"
+    },
+    {
+      "id": "edge_8",
+      "source": "response_formatter",
+      "sourceHandle": "output",
+      "target": "conversation_output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge_9",
+      "source": "conversation_input",
+      "sourceHandle": "sender_name",
+      "target": "conversation_memory",
+      "targetHandle": "input_key"
+    },
+    {
+      "id": "edge_10",
+      "source": "conversation_output",
+      "sourceHandle": "sender_name",
+      "target": "conversation_memory",
+      "targetHandle": "output_key"
+    }
+  ],
+  "settings": {
+    "flow_name": "basic_conversation",
+    "flow_description": "Yes-Man基本対話フロー - コンテキスト分析と性格忠実な応答生成",
+    "flow_category": "conversation",
+    "flow_tags": ["yes-man", "basic", "conversation", "context-analysis"],
+    "session_management": {
+      "enabled": true,
+      "session_timeout": 900,
+      "max_concurrent_sessions": 3
+    },
+    "performance": {
+      "max_response_time": 2500,
+      "enable_caching": true,
+      "cache_ttl": 180
+    },
+    "personality": {
+      "character_name": "Yes-Man",
+      "consistency_check": true,
+      "response_length_limit": 200,
+      "required_positive_start": true,
+      "politeness_level": "formal"
+    }
+  },
+  "metadata": {
+    "created_at": "2025-09-08T00:00:00Z",
+    "updated_at": "2025-09-08T00:00:00Z",
+    "version": "1.0.0",
+    "langflow_version": "1.0.0",
+    "python_version": "3.11",
+    "dependencies": {
+      "openai": ">=1.0.0",
+      "langchain": ">=0.1.0",
+      "langchain-openai": ">=0.1.0"
+    },
+    "features": {
+      "context_analysis": "入力内容の自動分析とカテゴリ分類",
+      "personality_enforcement": "Yes-Man性格の一貫性チェック",
+      "response_formatting": "応答の自動調整と最適化",
+      "conversation_memory": "5件の会話履歴保持",
+      "multi_pattern_matching": "計算・タイマー・時刻・挨拶・システム情報の自動検出"
+    },
+    "usage_notes": [
+      "基本的な対話処理に特化した軽量フロー",
+      "コンテキスト分析により適切な応答タイプを自動選択",
+      "Yes-Man性格の一貫性を自動チェック・修正",
+      "200文字以内の簡潔な応答を生成",
+      "専門ツールが必要ない一般会話に最適"
+    ]
+  }
+}

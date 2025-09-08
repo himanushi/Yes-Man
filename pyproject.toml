@@ -1,0 +1,131 @@
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | face_ui
+)/
+'''
+
+[tool.pylint]
+max-line-length = 88
+disable = [
+    "C0111",  # missing-docstring
+    "R0903",  # too-few-public-methods
+    "R0913",  # too-many-arguments
+]
+good-names = ["i", "j", "k", "ex", "Run", "_", "db", "id"]
+
+[tool.pylint.messages_control]
+extension-pkg-whitelist = ["pydantic"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "whispercpp.*",
+    "langflow.*",
+    "zmq.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yes-man"
+version = "0.1.0"
+description = "Yes-Man音声対話アシスタント - Fallout New Vegas風"
+requires-python = ">=3.11"
+authors = [
+    {name = "Yes-Man Project"}
+]
+
+dependencies = [
+    # 音声処理  
+    "openai-whisper>=20231117",
+    "torch",
+    "torchvision", 
+    "torchaudio",
+    "pyaudio>=0.2.13", 
+    "numpy>=1.24.0",
+    "sounddevice>=0.4.6",
+    
+    # LangFlow統合
+    "langflow>=1.0.0",
+    "requests>=2.31.0",
+    "httpx>=0.25.0",
+    
+    # 非同期処理とIPC
+    "pyzmq>=25.1.0",
+    "websockets>=11.0.0",
+    
+    # ログとユーティリティ
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.5.0",
+    "structlog>=23.2.0",
+    
+    # その他
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0", 
+    "pytest-mock>=3.12.0",
+]
+
+dev = [
+    "black>=23.11.0",
+    "pylint>=3.0.0",
+    "mypy>=1.7.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+yes-man = "audio_layer.main:run_main"
+yes-man-check-voicevox = "scripts.check:check_voicevox"
+yes-man-check-database = "scripts.check:check_database"
+yes-man-check-audio = "scripts.check:check_audio"
+yes-man-check-wake-word = "scripts.check:check_wake_word"
+yes-man-check-all = "scripts.check:check_all"
+yes-man-start-voicevox = "scripts.start_voicevox:main"
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu124" }]
+torchvision = [{ index = "pytorch-cu124" }]
+torchaudio = [{ index = "pytorch-cu124" }]
+
+[tool.hatch.build.targets.wheel]
+packages = ["audio_layer"]

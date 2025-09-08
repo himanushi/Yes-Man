@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: Yes-Man Face UI IPC Interface
+  description: ElectronとPython間のIPC通信インターフェース
+  version: 1.0.0
+  
+# IPC通信のため、実際のHTTPではなく概念的なAPI定義
+servers:
+  - url: ipc://yes-man-face-ui
+    description: Electron IPC通信チャネル
+    
+paths:
+  /face/set_state:
+    post:
+      summary: 顔表示状態設定
+      description: Yes-Manの顔アニメーション状態を変更
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+              properties:
+                state:
+                  type: string
+                  enum: ["idle", "listening", "thinking", "speaking"]
+                  description: 顔の表示状態
+                metadata:
+                  type: object
+                  properties:
+                    mood:
+                      type: string
+                      enum: ["happy", "excited", "confused", "helpful"]
+                    intensity:
+                      type: number
+                      minimum: 0.0
+                      maximum: 1.0
+                      default: 0.8
+                      description: 表情の強度
+                    speaking_text_length:
+                      type: integer
+                      description: 発話テキストの長さ（口の動き調整用）
+      responses:
+        '200':
+          description: 状態変更成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  previous_state:
+                    type: string
+                  new_state:
+                    type: string
+                  transition_duration_ms:
+                    type: integer
+
+  /face/show_notification:
+    post:
+      summary: 通知表示
+      description: 顔UI上に一時的な通知を表示
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  maxLength: 100
+                notification_type:
+                  type: string
+                  enum: ["info", "warning", "error"]
+                  default: "info"
+                duration_ms:
+                  type: integer
+                  default: 3000
+                  minimum: 1000
+                  maximum: 10000
+      responses:
+        '200':
+          description: 通知表示開始
+
+  /face/set_recording_indicator:
+    post:
+      summary: 録音状態インジケーター設定
+      description: 音声録音中であることを示すインジケーター表示
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_recording
+              properties:
+                is_recording:
+                  type: boolean
+                recording_type:
+                  type: string
+                  enum: ["wake_word_listening", "continuous_listening"]
+                confidence_level:
+                  type: number
+                  minimum: 0.0
+                  maximum: 1.0
+                  description: ウェイクワード検出時の信頼度
+      responses:
+        '200':
+          description: インジケーター更新成功
+
+  /face/update_system_status:
+    post:
+      summary: システム状態更新
+      description: CPU使用率、メモリ使用量などのシステム状態を更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cpu_usage_percent:
+                  type: number
+                  minimum: 0.0
+                  maximum: 100.0
+                memory_usage_mb:
+                  type: number
+                whisper_status:
+                  type: string
+                  enum: ["idle", "processing", "error"]
+                voicevox_status:
+                  type: string
+                  enum: ["connected", "disconnected", "error"]
+                langflow_status:
+                  type: string
+                  enum: ["connected", "disconnected", "error"]
+      responses:
+        '200':
+          description: 状態更新成功
+
+  /face/log_message:
+    post:
+      summary: ログメッセージ送信
+      description: Python側からElectronのログシステムにメッセージを送信
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+                - level
+              properties:
+                message:
+                  type: string
+                level:
+                  type: string
+                  enum: ["debug", "info", "warning", "error"]
+                component:
+                  type: string
+                  enum: ["audio", "langflow", "database", "main"]
+                timestamp:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: ログ記録成功
+
+  # Electron → Python 方向の通信
+  /settings/get_audio_settings:
+    get:
+      summary: 音声設定取得
+      description: Electron側から音声設定を取得
+      responses:
+        '200':
+          description: 音声設定
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wake_word:
+                    type: string
+                  confidence_threshold:
+                    type: number
+                  voicevox_speaker_id:
+                    type: integer
+                  microphone_device:
+                    type: string
+                  speaker_device:
+                    type: string
+
+  /settings/update_audio_settings:
+    post:
+      summary: 音声設定更新
+      description: Electron GUI から音声設定を更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wake_word:
+                  type: string
+                confidence_threshold:
+                  type: number
+                  minimum: 0.5
+                  maximum: 1.0
+                voicevox_speaker_id:
+                  type: integer
+                microphone_device:
+                  type: string
+                speaker_device:
+                  type: string
+      responses:
+        '200':
+          description: 設定更新成功
+
+  /control/start_stop_listening:
+    post:
+      summary: 音声監視開始/停止制御
+      description: Electron GUI から音声監視を制御
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: ["start", "stop", "pause", "resume"]
+      responses:
+        '200':
+          description: 制御実行成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action:
+                    type: string
+                  status:
+                    type: string
+                    enum: ["listening", "stopped", "paused"]
+
+  /test/trigger_test_conversation:
+    post:
+      summary: テスト会話トリガー
+      description: 開発・テスト用の会話シミュレーション
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - test_input
+              properties:
+                test_input:
+                  type: string
+                  description: テスト用の入力テキスト
+                skip_wake_word:
+                  type: boolean
+                  default: true
+                  description: ウェイクワード検出をスキップ
+      responses:
+        '200':
+          description: テスト実行成功
+
+components:
+  schemas:
+    FaceState:
+      type: object
+      properties:
+        current_state:
+          type: string
+          enum: ["idle", "listening", "thinking", "speaking"]
+        previous_state:
+          type: string
+        transition_start_time:
+          type: string
+          format: date-time
+        mood:
+          type: string
+          enum: ["happy", "excited", "confused", "helpful"]
+
+    IPCMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        sender:
+          type: string
+          enum: ["python", "electron"]
+        channel:
+          type: string
+        payload:
+          type: object
+
+    IPCError:
+      type: object
+      properties:
+        error:
+          type: string
+        error_code:
+          type: string
+          enum: ["IPC_TIMEOUT", "INVALID_CHANNEL", "SERIALIZATION_ERROR", "UNKNOWN_COMMAND"]
+        request_id:
+          type: string
+        details:
+          type: string
