@@ -77,6 +77,7 @@ class WakeWordDetector:
         self._is_listening = False
         self._last_detection_time: Optional[datetime] = None
         self._detection_callback: Optional[Callable] = None
+        self._is_processing = False  # 音声認識処理中フラグ
         
         # パフォーマンスメトリクス
         self._detection_count = 0
@@ -161,6 +162,11 @@ class WakeWordDetector:
                     time.sleep(0.1)
                     continue
                 
+                # 処理中の場合はスキップ
+                if self._is_processing:
+                    time.sleep(0.1)
+                    continue
+                
                 # バッファから音声データ取得
                 audio_data = self._get_buffer_snapshot()
                 if len(audio_data) < self.config.sample_rate:  # 最低1秒必要
@@ -173,9 +179,11 @@ class WakeWordDetector:
                     continue
                 
                 # ウェイクワード検出実行
+                self._is_processing = True
                 start_time = datetime.now()
                 confidence, detected_text = self._detect_wake_word(audio_data)
                 detection_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+                self._is_processing = False
                 
                 # 検出結果をログ表示（デバッグ用）
                 if detected_text and detected_text.strip():
@@ -212,7 +220,8 @@ class WakeWordDetector:
                 
             except Exception as e:
                 self.logger.error(f"Detection loop error: {e}")
-                asyncio.sleep(1.0)
+                self._is_processing = False  # エラー時もフラグリセット
+                time.sleep(1.0)
     
     def _detect_wake_word(self, audio_data: np.ndarray) -> Tuple[float, str]:
         """
