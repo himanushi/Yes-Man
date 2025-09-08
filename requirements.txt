@@ -4,14 +4,14 @@
 whispercpp[gpu]==0.1.8
 pyaudio>=0.2.13
 numpy>=1.24.0
+sounddevice>=0.4.6  # VoiceVox音声再生用
 
 # LangFlow統合
 langflow>=1.0.0
 requests>=2.31.0
 httpx>=0.25.0
 
-# データベース
-sqlite3  # Python標準ライブラリ
+# データベース（Python標準ライブラリのため不要）
 
 # 非同期処理とIPC
 asyncio  # Python標準ライブラリ
