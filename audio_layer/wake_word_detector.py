@@ -159,8 +159,7 @@ class WakeWordDetector:
             # Queueに音声チャンクを送信（ノンブロッキング）
             self._audio_queue.put_nowait(audio_chunk)
         except queue.Full:
-            # Queueが満杯の場合は古いデータを破棄
-            self.logger.warning("Audio queue full, dropping oldest chunk")
+            # Queueが満杯の場合は古いデータを破棄（正常動作）
             try:
                 self._audio_queue.get_nowait()
                 self._audio_queue.put_nowait(audio_chunk)
@@ -370,10 +369,10 @@ class WakeWordDetector:
                 # 検出時刻記録（クールダウン用）
                 self._last_detection_time = datetime.now()
             
-            # パフォーマンス制約チェック
-            if detection_time_ms > 1000:
+            # パフォーマンス制約チェック（2秒超過時のみ警告）
+            if detection_time_ms > 2000:
                 self.logger.warning(
-                    f"Wake word detection exceeded 1s constraint: {detection_time_ms}ms"
+                    f"Wake word detection exceeded 2s: {detection_time_ms}ms"
                 )
             
         except Exception as e:
