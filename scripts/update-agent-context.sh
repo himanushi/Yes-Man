@@ -27,12 +27,12 @@ fi
 
 echo "=== Updating agent context files for feature $CURRENT_BRANCH ==="
 
-# Extract tech from new plan
-NEW_LANG=$(grep "^**Language/Version**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Language\/Version**: //' | grep -v "NEEDS CLARIFICATION" || echo "")
-NEW_FRAMEWORK=$(grep "^**Primary Dependencies**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Primary Dependencies**: //' | grep -v "NEEDS CLARIFICATION" || echo "")
-NEW_TESTING=$(grep "^**Testing**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Testing**: //' | grep -v "NEEDS CLARIFICATION" || echo "")
-NEW_DB=$(grep "^**Storage**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Storage**: //' | grep -v "N/A" | grep -v "NEEDS CLARIFICATION" || echo "")
-NEW_PROJECT_TYPE=$(grep "^**Project Type**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**Project Type**: //' || echo "")
+# Extract tech from new plan (Japanese format)
+NEW_LANG=$(grep "^**言語/バージョン**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**言語\/バージョン**: //' | grep -v "NEEDS CLARIFICATION" || echo "")
+NEW_FRAMEWORK=$(grep "^**主要依存関係**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**主要依存関係**: //' | grep -v "NEEDS CLARIFICATION" || echo "")
+NEW_TESTING=$(grep "^**テスト**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**テスト**: //' | grep -v "NEEDS CLARIFICATION" || echo "")
+NEW_DB=$(grep "^**ストレージ**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**ストレージ**: //' | grep -v "N/A" | grep -v "NEEDS CLARIFICATION" || echo "")
+NEW_PROJECT_TYPE=$(grep "^**プロジェクトタイプ**: " "$NEW_PLAN" 2>/dev/null | head -1 | sed 's/^**プロジェクトタイプ**: //' || echo "")
 
 # Function to update a single agent context file
 update_agent_file() {
@@ -56,21 +56,23 @@ update_agent_file() {
             return 1
         fi
         
-        # Replace placeholders
-        sed -i.bak "s/\[PROJECT NAME\]/$(basename $REPO_ROOT)/" "$temp_file"
-        sed -i.bak "s/\[DATE\]/$(date +%Y-%m-%d)/" "$temp_file"
-        sed -i.bak "s/\[EXTRACTED FROM ALL PLAN.MD FILES\]/- $NEW_LANG + $NEW_FRAMEWORK ($CURRENT_BRANCH)/" "$temp_file"
+        # Replace placeholders with proper escaping (correct template format)
+        PROJECT_NAME=$(basename "$REPO_ROOT")
+        CURRENT_DATE=$(date +%Y-%m-%d)
+        sed -i.bak "s/\[プロジェクト名\]/$PROJECT_NAME/" "$temp_file"
+        sed -i.bak "s/\[日付\]/$CURRENT_DATE/" "$temp_file"
+        sed -i.bak "s|\[すべての PLAN.MD ファイルから抽出\]|- $NEW_LANG + $NEW_FRAMEWORK ($CURRENT_BRANCH)|" "$temp_file"
         
-        # Add project structure based on type
+        # Add project structure based on type (correct template format)
         if [[ "$NEW_PROJECT_TYPE" == *"web"* ]]; then
-            sed -i.bak "s|\[ACTUAL STRUCTURE FROM PLANS\]|backend/\nfrontend/\ntests/|" "$temp_file"
+            sed -i.bak "s|\[計画からの実際の構造\]|audio_layer/\nface_ui/\nlangflow_flows/\ntests/|" "$temp_file"
         else
-            sed -i.bak "s|\[ACTUAL STRUCTURE FROM PLANS\]|src/\ntests/|" "$temp_file"
+            sed -i.bak "s|\[計画からの実際の構造\]|audio_layer/\nface_ui/\nlangflow_flows/\ntests/|" "$temp_file"
         fi
         
-        # Add minimal commands
+        # Add minimal commands (correct template format)
         if [[ "$NEW_LANG" == *"Python"* ]]; then
-            COMMANDS="cd src && pytest && ruff check ."
+            COMMANDS="pytest tests/ && ruff check audio_layer/"
         elif [[ "$NEW_LANG" == *"Rust"* ]]; then
             COMMANDS="cargo test && cargo clippy"
         elif [[ "$NEW_LANG" == *"JavaScript"* ]] || [[ "$NEW_LANG" == *"TypeScript"* ]]; then
@@ -78,13 +80,13 @@ update_agent_file() {
         else
             COMMANDS="# Add commands for $NEW_LANG"
         fi
-        sed -i.bak "s|\[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES\]|$COMMANDS|" "$temp_file"
+        sed -i.bak "s|\[アクティブテクノロジー用のコマンドのみ\]|$COMMANDS|" "$temp_file"
         
-        # Add code style
-        sed -i.bak "s|\[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE\]|$NEW_LANG: Follow standard conventions|" "$temp_file"
+        # Add code style (correct template format)
+        sed -i.bak "s|\[言語固有、使用中の言語のみ\]|$NEW_LANG: Follow standard conventions|" "$temp_file"
         
-        # Add recent changes
-        sed -i.bak "s|\[LAST 3 FEATURES AND WHAT THEY ADDED\]|- $CURRENT_BRANCH: Added $NEW_LANG + $NEW_FRAMEWORK|" "$temp_file"
+        # Add recent changes (correct template format)
+        sed -i.bak "s|\[最新の3つの機能とその追加内容\]|- $CURRENT_BRANCH: Added $NEW_LANG + $NEW_FRAMEWORK|" "$temp_file"
         
         rm "$temp_file.bak"
     else
@@ -99,77 +101,86 @@ update_agent_file() {
         fi
         
         # Parse existing file and create updated version
-        python3 - << EOF
+        python3 - "$target_file" "$temp_file" "$NEW_LANG" "$NEW_FRAMEWORK" "$NEW_DB" "$NEW_PROJECT_TYPE" "$CURRENT_BRANCH" << 'EOF'
 import re
 import sys
 from datetime import datetime
 
+# Get command line arguments
+target_file = sys.argv[1]
+temp_file = sys.argv[2]
+new_lang = sys.argv[3] if len(sys.argv) > 3 else ""
+new_framework = sys.argv[4] if len(sys.argv) > 4 else ""
+new_db = sys.argv[5] if len(sys.argv) > 5 else ""
+new_project_type = sys.argv[6] if len(sys.argv) > 6 else ""
+current_branch = sys.argv[7] if len(sys.argv) > 7 else ""
+
 # Read existing file
-with open("$target_file", 'r') as f:
+with open(target_file, 'r') as f:
     content = f.read()
 
-# Check if new tech already exists
-tech_section = re.search(r'## Active Technologies\n(.*?)\n\n', content, re.DOTALL)
+# Check if new tech already exists (correct Japanese section name)
+tech_section = re.search(r'## アクティブテクノロジー\n(.*?)\n\n', content, re.DOTALL)
 if tech_section:
     existing_tech = tech_section.group(1)
     
     # Add new tech if not already present
     new_additions = []
-    if "$NEW_LANG" and "$NEW_LANG" not in existing_tech:
-        new_additions.append(f"- $NEW_LANG + $NEW_FRAMEWORK ($CURRENT_BRANCH)")
-    if "$NEW_DB" and "$NEW_DB" not in existing_tech and "$NEW_DB" != "N/A":
-        new_additions.append(f"- $NEW_DB ($CURRENT_BRANCH)")
+    if new_lang and new_lang not in existing_tech:
+        new_additions.append(f"- {new_lang} + {new_framework} ({current_branch})")
+    if new_db and new_db not in existing_tech and new_db != "N/A":
+        new_additions.append(f"- {new_db} ({current_branch})")
     
     if new_additions:
         updated_tech = existing_tech + "\n" + "\n".join(new_additions)
-        content = content.replace(tech_section.group(0), f"## Active Technologies\n{updated_tech}\n\n")
+        content = content.replace(tech_section.group(0), f"## アクティブテクノロジー\n{updated_tech}\n\n")
 
-# Update project structure if needed
-if "$NEW_PROJECT_TYPE" == "web" and "frontend/" not in content:
-    struct_section = re.search(r'## Project Structure\n\`\`\`\n(.*?)\n\`\`\`', content, re.DOTALL)
+# Update project structure if needed (correct Japanese section name)
+if new_project_type == "web" and "frontend/" not in content:
+    struct_section = re.search(r'## プロジェクト構造\n```\n(.*?)\n```', content, re.DOTALL)
     if struct_section:
         updated_struct = struct_section.group(1) + "\nfrontend/src/      # Web UI"
-        content = re.sub(r'(## Project Structure\n\`\`\`\n).*?(\n\`\`\`)', 
+        content = re.sub(r'(## プロジェクト構造\n```\n).*?(\n```)', 
                         f'\\1{updated_struct}\\2', content, flags=re.DOTALL)
 
-# Add new commands if language is new
-if "$NEW_LANG" and f"# {NEW_LANG}" not in content:
-    commands_section = re.search(r'## Commands\n\`\`\`bash\n(.*?)\n\`\`\`', content, re.DOTALL)
+# Add new commands if language is new (correct Japanese section name)
+if new_lang and f"# {new_lang}" not in content:
+    commands_section = re.search(r'## コマンド\n```bash\n(.*?)\n```', content, re.DOTALL)
     if not commands_section:
-        commands_section = re.search(r'## Commands\n(.*?)\n\n', content, re.DOTALL)
+        commands_section = re.search(r'## コマンド\n(.*?)\n\n', content, re.DOTALL)
     
     if commands_section:
         new_commands = commands_section.group(1)
-        if "Python" in "$NEW_LANG":
-            new_commands += "\ncd src && pytest && ruff check ."
-        elif "Rust" in "$NEW_LANG":
+        if "Python" in new_lang:
+            new_commands += "\npytest tests/ && ruff check audio_layer/"
+        elif "Rust" in new_lang:
             new_commands += "\ncargo test && cargo clippy"
-        elif "JavaScript" in "$NEW_LANG" or "TypeScript" in "$NEW_LANG":
+        elif "JavaScript" in new_lang or "TypeScript" in new_lang:
             new_commands += "\nnpm test && npm run lint"
         
         if "```bash" in content:
-            content = re.sub(r'(## Commands\n\`\`\`bash\n).*?(\n\`\`\`)', 
+            content = re.sub(r'(## コマンド\n```bash\n).*?(\n```)', 
                             f'\\1{new_commands}\\2', content, flags=re.DOTALL)
         else:
-            content = re.sub(r'(## Commands\n).*?(\n\n)', 
+            content = re.sub(r'(## コマンド\n).*?(\n\n)', 
                             f'\\1{new_commands}\\2', content, flags=re.DOTALL)
 
-# Update recent changes (keep only last 3)
-changes_section = re.search(r'## Recent Changes\n(.*?)(\n\n|$)', content, re.DOTALL)
+# Update recent changes (keep only last 3) (correct Japanese section name)
+changes_section = re.search(r'## 最近の変更\n(.*?)(\n\n|$)', content, re.DOTALL)
 if changes_section:
     changes = changes_section.group(1).strip().split('\n')
-    changes.insert(0, f"- $CURRENT_BRANCH: Added $NEW_LANG + $NEW_FRAMEWORK")
+    changes.insert(0, f"- {current_branch}: Added {new_lang} + {new_framework}")
     # Keep only last 3
     changes = changes[:3]
-    content = re.sub(r'(## Recent Changes\n).*?(\n\n|$)', 
+    content = re.sub(r'(## 最近の変更\n).*?(\n\n|$)', 
                     f'\\1{chr(10).join(changes)}\\2', content, flags=re.DOTALL)
 
-# Update date
-content = re.sub(r'Last updated: \d{4}-\d{2}-\d{2}', 
-                f'Last updated: {datetime.now().strftime("%Y-%m-%d")}', content)
+# Update date (correct Japanese format)
+content = re.sub(r'最終更新: \d{4}-\d{2}-\d{2}', 
+                f'最終更新: {datetime.now().strftime("%Y-%m-%d")}', content)
 
 # Write to temp file
-with open("$temp_file", 'w') as f:
+with open(temp_file, 'w') as f:
     f.write(content)
 EOF
 
