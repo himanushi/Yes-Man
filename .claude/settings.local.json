@@ -10,7 +10,8 @@
       "Bash(python -m pytest tests/contract/test_audio_api_wake_word.py -v)",
       "Bash(python.exe -m pytest --version)",
       "Bash(pip install:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(uv pip install:*)"
     ],
     "deny": [],
     "ask": []
