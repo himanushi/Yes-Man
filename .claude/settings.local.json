@@ -5,7 +5,11 @@
       "WebSearch",
       "Bash(scripts/setup-plan.sh:*)",
       "Bash(scripts/update-agent-context.sh:*)",
-      "Bash(scripts/check-task-prerequisites.sh:*)"
+      "Bash(scripts/check-task-prerequisites.sh:*)",
+      "Bash(tree:*)",
+      "Bash(python -m pytest tests/contract/test_audio_api_wake_word.py -v)",
+      "Bash(python.exe -m pytest --version)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []
