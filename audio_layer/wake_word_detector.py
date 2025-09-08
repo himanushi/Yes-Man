@@ -364,7 +364,14 @@ class WakeWordDetector:
                 
                 # コールバック実行
                 if self._detection_callback:
-                    self._detection_callback(confidence, detected_text)
+                    # asyncコールバックの場合は別スレッドで実行
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                        loop.create_task(self._detection_callback(confidence, detected_text))
+                    except RuntimeError:
+                        # イベントループがない場合は新しいループで実行
+                        asyncio.run(self._detection_callback(confidence, detected_text))
                 
                 # 検出時刻記録（クールダウン用）
                 self._last_detection_time = datetime.now()
