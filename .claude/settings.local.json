@@ -9,7 +9,8 @@
       "Bash(tree:*)",
       "Bash(python -m pytest tests/contract/test_audio_api_wake_word.py -v)",
       "Bash(python.exe -m pytest --version)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
