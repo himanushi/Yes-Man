@@ -42,7 +42,7 @@
       "type": "OpenAI",
       "position": { "x": 700, "y": 200 },
       "data": {
-        "model_name": "gpt-3.5-turbo",
+        "model_name": "gpt-5-mini",
         "temperature": 0.7,
         "max_tokens": 200,
         "top_p": 1.0,
