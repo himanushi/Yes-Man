@@ -157,13 +157,13 @@ class WakeWordDetector:
             try:
                 # クールダウンチェック
                 if self._is_in_cooldown():
-                    await asyncio.sleep(0.1)
+                    time.sleep(0.1)
                     continue
                 
                 # バッファから音声データ取得
                 audio_data = self._get_buffer_snapshot()
                 if len(audio_data) < self.config.sample_rate:  # 最低1秒必要
-                    await asyncio.sleep(0.1)
+                    time.sleep(0.1)
                     continue
                 
                 # ウェイクワード検出実行
