@@ -11,6 +11,7 @@ import logging
 import asyncio
 import threading
 import time
+import queue
 from typing import Optional, Callable, Dict, Any, List, Tuple
 from dataclasses import dataclass
 from datetime import datetime
@@ -67,17 +68,19 @@ class WakeWordDetector:
             )
             self.whisper = WhisperIntegration(whisper_config)
         
-        # 循環音声バッファ（憲法IV: メモリ内のみ）
-        self._audio_buffer = deque(
-            maxlen=self.config.sample_rate * self.config.max_audio_buffer_seconds
-        )
-        self._buffer_lock = threading.Lock()
+        # Queue + Threading アーキテクチャ
+        self._audio_queue = queue.Queue(maxsize=10)  # 最大10チャンク
+        self._processing_thread: Optional[threading.Thread] = None
         
         # 検出状態
         self._is_listening = False
         self._last_detection_time: Optional[datetime] = None
         self._detection_callback: Optional[Callable] = None
-        self._is_processing = False  # 音声認識処理中フラグ
+        
+        # 音声蓄積バッファ（連続音声用）
+        self._accumulated_audio = []
+        self._last_activity_time: Optional[datetime] = None
+        self._silence_threshold_seconds = 1.0  # 1秒無音で区切り
         
         # パフォーマンスメトリクス
         self._detection_count = 0
@@ -121,14 +124,14 @@ class WakeWordDetector:
             self._detection_callback = callback
             self._is_listening = True
             
-            # 検出スレッド開始
-            detection_thread = threading.Thread(
-                target=self._detection_loop,
+            # Queue処理スレッド開始
+            self._processing_thread = threading.Thread(
+                target=self._processing_loop,
                 daemon=True
             )
-            detection_thread.start()
+            self._processing_thread.start()
             
-            self.logger.info(f"Wake word detection started for '{self.config.wake_word}'")
+            self.logger.info(f"Wake word detection started for '{self.config.wake_word}' (Queue+Threading architecture)")
             return True
             
         except Exception as e:
@@ -142,85 +145,67 @@ class WakeWordDetector:
     
     def process_audio_chunk(self, audio_chunk: np.ndarray) -> None:
         """
-        音声チャンク処理
+        音声チャンク処理 - Queueに送信
         
-        憲法IV: 循環バッファでプライバシー保護
+        憲法IV: プライバシー保護
         
         Args:
             audio_chunk: 音声データチャンク
         """
-        with self._buffer_lock:
-            # 循環バッファに追加（古いデータは自動削除）
-            self._audio_buffer.extend(audio_chunk)
+        if not self._is_listening:
+            return
+            
+        try:
+            # Queueに音声チャンクを送信（ノンブロッキング）
+            self._audio_queue.put_nowait(audio_chunk)
+        except queue.Full:
+            # Queueが満杯の場合は古いデータを破棄
+            self.logger.warning("Audio queue full, dropping oldest chunk")
+            try:
+                self._audio_queue.get_nowait()
+                self._audio_queue.put_nowait(audio_chunk)
+            except queue.Empty:
+                pass
     
-    def _detection_loop(self) -> None:
-        """検出ループ（バックグラウンドスレッド）"""
+    def _processing_loop(self) -> None:
+        """Queue処理ループ（バックグラウンドスレッド）"""
         while self._is_listening:
             try:
-                # クールダウンチェック
-                if self._is_in_cooldown():
-                    time.sleep(0.1)
+                # Queueから音声チャンク取得（タイムアウト付き）
+                try:
+                    audio_chunk = self._audio_queue.get(timeout=0.5)
+                except queue.Empty:
+                    # 無音期間の処理
+                    self._check_silence_timeout()
                     continue
                 
-                # 処理中の場合はスキップ
-                if self._is_processing:
-                    time.sleep(0.1)
-                    continue
+                # 音声活動検出
+                has_activity = self._has_voice_activity(audio_chunk)
+                current_time = datetime.now()
                 
-                # バッファから音声データ取得
-                audio_data = self._get_buffer_snapshot()
-                if len(audio_data) < self.config.sample_rate:  # 最低1秒必要
-                    time.sleep(0.1)
-                    continue
-                
-                # 音声活動検出（無音かどうかチェック）
-                if not self._has_voice_activity(audio_data):
-                    time.sleep(0.1)
-                    continue
-                
-                # ウェイクワード検出実行
-                self._is_processing = True
-                start_time = datetime.now()
-                confidence, detected_text = self._detect_wake_word(audio_data)
-                detection_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
-                self._is_processing = False
-                
-                # 検出結果をログ表示（デバッグ用）
-                if detected_text and detected_text.strip():
-                    self.logger.debug(f"Detected: '{detected_text}' (confidence: {confidence:.2f})")
-                
-                # パフォーマンスメトリクス更新
-                self._update_metrics(detection_time_ms, confidence)
-                
-                # 閾値チェック
-                if confidence >= self.config.confidence_threshold:
-                    self.logger.info(
-                        f"Wake word detected: '{detected_text}' "
-                        f"(confidence: {confidence:.2f}, time: {detection_time_ms}ms)"
-                    )
+                if has_activity:
+                    # 音声活動あり：バッファに蓄積
+                    self._accumulated_audio.append(audio_chunk)
+                    self._last_activity_time = current_time
                     
-                    # コールバック実行
-                    if self._detection_callback:
-                        self._detection_callback(confidence, detected_text)
-                    
-                    # 検出時刻記録（クールダウン用）
-                    self._last_detection_time = datetime.now()
-                    
-                    # バッファクリア（プライバシー保護）
-                    self._clear_buffer()
+                    # バッファサイズ制限（憲法IV: プライバシー保護）
+                    max_chunks = int(self.config.max_audio_buffer_seconds * 
+                                   self.config.sample_rate / len(audio_chunk))
+                    if len(self._accumulated_audio) > max_chunks:
+                        self._accumulated_audio.pop(0)  # 古いチャンクを削除
+                        
+                else:
+                    # 音声活動なし：無音期間
+                    if (self._last_activity_time and 
+                        (current_time - self._last_activity_time).total_seconds() > self._silence_threshold_seconds):
+                        # 無音期間が閾値を超えた：蓄積音声を処理
+                        self._process_accumulated_audio()
                 
-                # パフォーマンス制約チェック
-                if detection_time_ms > 1000:
-                    self.logger.warning(
-                        f"Wake word detection exceeded 1s constraint: {detection_time_ms}ms"
-                    )
-                
-                # CPU負荷軽減のための待機
-                time.sleep(0.1)
+                # Queueタスク完了
+                self._audio_queue.task_done()
                 
             except Exception as e:
-                self.logger.error(f"Detection loop error: {e}")
-                self._is_processing = False  # エラー時もフラグリセット
+                self.logger.error(f"Processing loop error: {e}")
                 time.sleep(1.0)
     
     def _detect_wake_word(self, audio_data: np.ndarray) -> Tuple[float, str]:
@@ -308,23 +293,6 @@ class WakeWordDetector:
         elapsed_ms = (datetime.now() - self._last_detection_time).total_seconds() * 1000
         return elapsed_ms < self.config.cooldown_ms
     
-    def _get_buffer_snapshot(self) -> np.ndarray:
-        """
-        バッファスナップショット取得
-        
-        憲法IV: コピーを返してメモリ安全性確保
-        """
-        with self._buffer_lock:
-            return np.array(list(self._audio_buffer), dtype=np.float32)
-    
-    def _clear_buffer(self) -> None:
-        """
-        バッファクリア
-        
-        憲法IV: プライバシー保護のため検出後即削除
-        """
-        with self._buffer_lock:
-            self._audio_buffer.clear()
     
     def _has_voice_activity(self, audio_data: np.ndarray, threshold: float = 0.01) -> bool:
         """
@@ -350,6 +318,75 @@ class WakeWordDetector:
             self.logger.debug(f"Voice activity detected: RMS={rms:.4f} (threshold={threshold:.4f})")
         
         return has_activity
+    
+    def _check_silence_timeout(self) -> None:
+        """無音期間タイムアウトチェック"""
+        if (self._last_activity_time and 
+            (datetime.now() - self._last_activity_time).total_seconds() > self._silence_threshold_seconds):
+            self._process_accumulated_audio()
+    
+    def _process_accumulated_audio(self) -> None:
+        """蓄積された音声データを処理"""
+        if not self._accumulated_audio:
+            return
+        
+        # クールダウンチェック
+        if self._is_in_cooldown():
+            self._clear_accumulated_audio()
+            return
+        
+        # 音声データ結合
+        audio_data = np.concatenate(self._accumulated_audio)
+        
+        # 最小長チェック
+        if len(audio_data) < self.config.sample_rate:  # 最低1秒必要
+            self._clear_accumulated_audio()
+            return
+        
+        try:
+            # ウェイクワード検出実行
+            start_time = datetime.now()
+            confidence, detected_text = self._detect_wake_word(audio_data)
+            detection_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            
+            # 検出結果をログ表示（デバッグ用）
+            if detected_text and detected_text.strip():
+                self.logger.debug(f"Detected: '{detected_text}' (confidence: {confidence:.2f})")
+            
+            # パフォーマンスメトリクス更新
+            self._update_metrics(detection_time_ms, confidence)
+            
+            # 閾値チェック
+            if confidence >= self.config.confidence_threshold:
+                self.logger.info(
+                    f"Wake word detected: '{detected_text}' "
+                    f"(confidence: {confidence:.2f}, time: {detection_time_ms}ms)"
+                )
+                
+                # コールバック実行
+                if self._detection_callback:
+                    self._detection_callback(confidence, detected_text)
+                
+                # 検出時刻記録（クールダウン用）
+                self._last_detection_time = datetime.now()
+            
+            # パフォーマンス制約チェック
+            if detection_time_ms > 1000:
+                self.logger.warning(
+                    f"Wake word detection exceeded 1s constraint: {detection_time_ms}ms"
+                )
+            
+        except Exception as e:
+            self.logger.error(f"Wake word processing error: {e}")
+        
+        finally:
+            # バッファクリア（プライバシー保護）
+            self._clear_accumulated_audio()
+    
+    def _clear_accumulated_audio(self) -> None:
+        """蓄積音声バッファクリア"""
+        self._accumulated_audio.clear()
+        self._last_activity_time = None
     
     def _update_metrics(self, detection_time_ms: int, confidence: float) -> None:
         """パフォーマンスメトリクス更新"""
@@ -411,7 +448,16 @@ class WakeWordDetector:
         憲法IV: メモリ完全クリア
         """
         self.stop_listening()
-        self._clear_buffer()
+        
+        # Queue内の残りアイテムをクリア
+        while not self._audio_queue.empty():
+            try:
+                self._audio_queue.get_nowait()
+            except queue.Empty:
+                break
+        
+        # 蓄積音声クリア
+        self._clear_accumulated_audio()
         
         if self.whisper:
             self.whisper.cleanup()
