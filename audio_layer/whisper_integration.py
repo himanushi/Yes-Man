@@ -21,7 +21,7 @@ import whisper
 @dataclass
 class WhisperConfig:
     """Whisper.cpp設定"""
-    model_size: str = "medium"  # research.md決定
+    model_size: str = "large"  # パフォーマンス改善のためlarge使用
     model_path: Optional[str] = None
     language: str = "ja"  # 日本語メイン
     use_gpu: bool = True  # CUDA最適化
