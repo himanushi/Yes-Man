@@ -25,6 +25,7 @@ from .wake_word_detector import WakeWordDetector, WakeWordConfig
 from .continuous_recognition import ContinuousRecognition, ContinuousRecognitionConfig
 from .voicevox_integration import VoiceVoxIntegration, VoiceVoxConfig
 from .audio_buffer import AudioBufferManager, AudioBufferConfig, AudioChunk
+from .microphone_input import MicrophoneInput, MicrophoneConfig
 
 # データベース
 from .database.models.conversation_session import ConversationSession, ConversationSessionRepository
@@ -180,10 +181,18 @@ class AudioLayerManager:
             )
             self.voicevox = VoiceVoxIntegration(voicevox_config)
             
-            # 6. コールバック設定
+            # 6. マイク入力初期化
+            microphone_config = MicrophoneConfig(
+                sample_rate=self.config.buffer_sample_rate,
+                chunk_size=1024,
+                channels=1
+            )
+            self.microphone = MicrophoneInput(microphone_config)
+            
+            # 7. コールバック設定
             self._setup_callbacks()
             
-            # 7. 音声バッファにプロセッサ登録
+            # 8. 音声バッファにプロセッサ登録
             self._register_audio_processors()
             
             self._start_time = datetime.now()
@@ -224,6 +233,19 @@ class AudioLayerManager:
             
             self.logger.info("Starting audio layer...")
             
+            # マイク入力開始 - wake_word_detectorに直接接続
+            def on_audio_data(audio_data):
+                """マイクからの音声データを wake word detector に送信"""
+                if self.wake_word_detector:
+                    self.wake_word_detector.process_audio_chunk(audio_data)
+                # バッファにも追加
+                if self.audio_buffer:
+                    self.audio_buffer.add_audio_data(audio_data)
+            
+            if not self.microphone.start_recording(on_audio_data):
+                self.logger.error("Failed to start microphone recording")
+                return False
+            
             # ウェイクワード検出開始
             if not self.wake_word_detector.start_listening(self._wake_word_callback):
                 self.logger.error("Failed to start wake word detection")
@@ -250,6 +272,10 @@ class AudioLayerManager:
             
             self.logger.info("Stopping audio layer...")
             self._is_running = False
+            
+            # マイク入力停止
+            if self.microphone:
+                self.microphone.stop_recording()
             
             # ウェイクワード検出停止
             if self.wake_word_detector:
