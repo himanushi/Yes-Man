@@ -35,13 +35,16 @@ class LangFlowManager:
                 sys.executable, "-m", "langflow", "run",
                 "--host", host,
                 "--port", str(port),
-                "--log-level", "INFO"
+                "--log-level", "info",
+                "--no-open-browser"
             ]
+            
+            print(f"Executing command: {' '.join(cmd)}")
             
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
+                stderr=subprocess.PIPE,
                 universal_newlines=True,
                 bufsize=1
             )
@@ -50,12 +53,35 @@ class LangFlowManager:
             print(f"LangFlow started with PID: {self.process.pid}")
             print("Press Ctrl+C to stop")
             
-            # ログ出力
+            # ログ出力（stdout と stderr を両方監視）
+            import threading
+            
+            def read_stdout():
+                try:
+                    for line in self.process.stdout:
+                        print(f"[STDOUT] {line.strip()}")
+                        if "Open Langflow" in line:
+                            print(f"\n✅ LangFlow is ready at http://{host}:{port}\n")
+                except Exception as e:
+                    print(f"Error reading stdout: {e}")
+            
+            def read_stderr():
+                try:
+                    for line in self.process.stderr:
+                        print(f"[STDERR] {line.strip()}")
+                except Exception as e:
+                    print(f"Error reading stderr: {e}")
+            
+            # 別スレッドでstdout/stderrを読み取り
+            stdout_thread = threading.Thread(target=read_stdout, daemon=True)
+            stderr_thread = threading.Thread(target=read_stderr, daemon=True)
+            
+            stdout_thread.start()
+            stderr_thread.start()
+            
             try:
-                for line in self.process.stdout:
-                    print(line.strip())
-                    if "Open Langflow" in line:
-                        print(f"\n✅ LangFlow is ready at http://{host}:{port}\n")
+                # プロセスの終了を待機
+                self.process.wait()
             except KeyboardInterrupt:
                 print("\nKeyboard interrupt received...")
                 self.stop()
