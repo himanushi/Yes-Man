@@ -110,12 +110,14 @@ dev = [
 
 [project.scripts]
 yes-man = "audio_layer.main:run_main"
+yes-man-langflow = "langflow.main:main"
 yes-man-check-voicevox = "scripts.check:check_voicevox"
 yes-man-check-database = "scripts.check:check_database"
 yes-man-check-audio = "scripts.check:check_audio"
 yes-man-check-wake-word = "scripts.check:check_wake_word"
 yes-man-check-all = "scripts.check:check_all"
 yes-man-start-voicevox = "scripts.start_voicevox:main"
+yes-man-start-langflow = "scripts.start_langflow:main"
 
 [[tool.uv.index]]
 name = "pytorch-cu124"
