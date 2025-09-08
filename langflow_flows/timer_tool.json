@@ -1,0 +1,163 @@
+{
+  "name": "Yes-Man Timer Tool",
+  "description": "Yes-Man音声アシスタント用タイマーツール",
+  "version": "1.0.0",
+  "author": "Yes-Man Project",
+  "tool_type": "timer",
+  "nodes": [
+    {
+      "id": "timer_input",
+      "type": "TextInput",
+      "position": { "x": 100, "y": 200 },
+      "data": {
+        "input_text": "",
+        "input_name": "duration",
+        "input_description": "タイマーの秒数を入力してください（1-3600秒）"
+      }
+    },
+    {
+      "id": "duration_parser",
+      "type": "PythonREPL",
+      "position": { "x": 300, "y": 200 },
+      "data": {
+        "name": "parser",
+        "description": "タイマー時間を解析・正規化します",
+        "code": "import re\nimport json\n\ndef parse_duration(input_text):\n    \"\"\"様々な時間表現を秒数に変換\"\"\"\n    if not input_text:\n        return None, \"時間を指定してください\"\n    \n    text = input_text.strip().lower()\n    \n    # 数値のみの場合（秒として扱う）\n    if text.isdigit():\n        return int(text), None\n    \n    # 秒、分、時間を含む表現のパターン\n    patterns = [\n        # 「30秒」「30s」\n        (r'(\\d+)\\s*(?:秒|sec|s)', lambda m: int(m.group(1))),\n        # 「5分」「5min」「5m」\n        (r'(\\d+)\\s*(?:分|min|m)', lambda m: int(m.group(1)) * 60),\n        # 「1時間」「1hour」「1h」\n        (r'(\\d+)\\s*(?:時間|hour|h)', lambda m: int(m.group(1)) * 3600),\n        # 「3分30秒」\n        (r'(\\d+)\\s*(?:分|min|m)\\s*(\\d+)\\s*(?:秒|sec|s)', \n         lambda m: int(m.group(1)) * 60 + int(m.group(2))),\n        # 「1時間30分」\n        (r'(\\d+)\\s*(?:時間|hour|h)\\s*(\\d+)\\s*(?:分|min|m)', \n         lambda m: int(m.group(1)) * 3600 + int(m.group(2)) * 60),\n        # 「1時間30分45秒」\n        (r'(\\d+)\\s*(?:時間|hour|h)\\s*(\\d+)\\s*(?:分|min|m)\\s*(\\d+)\\s*(?:秒|sec|s)',\n         lambda m: int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))),\n        # 「MM:SS」形式\n        (r'(\\d+):(\\d+)', lambda m: int(m.group(1)) * 60 + int(m.group(2))),\n        # 「HH:MM:SS」形式\n        (r'(\\d+):(\\d+):(\\d+)', \n         lambda m: int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))),\n    ]\n    \n    for pattern, converter in patterns:\n        match = re.search(pattern, text)\n        if match:\n            try:\n                seconds = converter(match)\n                return seconds, None\n            except ValueError as e:\n                return None, f\"時間の解析でエラー: {e}\"\n    \n    # パターンマッチしない場合、数値抽出を試行\n    numbers = re.findall(r'\\d+', text)\n    if numbers:\n        try:\n            # 最初の数値を秒として扱う\n            seconds = int(numbers[0])\n            return seconds, None\n        except ValueError:\n            pass\n    \n    return None, \"時間の形式を認識できませんでした\"\n\ndef validate_duration(seconds):\n    \"\"\"タイマー時間の妥当性チェック\"\"\"\n    if seconds is None:\n        return False, \"時間が指定されていません\"\n    \n    if seconds <= 0:\n        return False, \"タイマーは1秒以上で設定してください\"\n    \n    if seconds > 3600:  # 1時間\n        return False, \"タイマーは1時間（3600秒）以内で設定してください\"\n    \n    return True, \"OK\"\n\ndef format_duration(seconds):\n    \"\"\"秒数を読みやすい形式に変換\"\"\"\n    if seconds < 60:\n        return f\"{seconds}秒\"\n    elif seconds < 3600:\n        minutes = seconds // 60\n        remaining_seconds = seconds % 60\n        if remaining_seconds == 0:\n            return f\"{minutes}分\"\n        else:\n            return f\"{minutes}分{remaining_seconds}秒\"\n    else:\n        hours = seconds // 3600\n        remaining_minutes = (seconds % 3600) // 60\n        remaining_seconds = seconds % 60\n        \n        result = f\"{hours}時間\"\n        if remaining_minutes > 0:\n            result += f\"{remaining_minutes}分\"\n        if remaining_seconds > 0:\n            result += f\"{remaining_seconds}秒\"\n        return result\n\n# メイン処理\ninput_text = input().strip()\n\n# 時間解析\nseconds, parse_error = parse_duration(input_text)\n\nif parse_error:\n    result = {\n        'success': False,\n        'error': parse_error,\n        'input': input_text,\n        'seconds': None,\n        'formatted_duration': None\n    }\nelse:\n    # バリデーション\n    is_valid, validation_error = validate_duration(seconds)\n    \n    if not is_valid:\n        result = {\n            'success': False,\n            'error': validation_error,\n            'input': input_text,\n            'seconds': seconds,\n            'formatted_duration': None\n        }\n    else:\n        result = {\n            'success': True,\n            'error': None,\n            'input': input_text,\n            'seconds': seconds,\n            'formatted_duration': format_duration(seconds)\n        }\n\nprint(json.dumps(result, ensure_ascii=False))"
+      }
+    },
+    {
+      "id": "timer_executor",
+      "type": "PythonREPL",
+      "position": { "x": 500, "y": 200 },
+      "data": {
+        "name": "executor",
+        "description": "タイマーを実行します",
+        "code": "import json\nimport threading\nimport time\nfrom datetime import datetime, timedelta\n\n# グローバルなタイマー管理\nactive_timers = {}\ntimer_counter = 0\n\ndef create_timer(seconds, formatted_duration):\n    \"\"\"タイマー作成と開始\"\"\"\n    global timer_counter\n    timer_counter += 1\n    timer_id = f\"timer_{timer_counter}_{int(time.time())}\"\n    \n    start_time = datetime.now()\n    end_time = start_time + timedelta(seconds=seconds)\n    \n    def timer_callback():\n        try:\n            time.sleep(seconds)\n            # タイマー完了処理\n            if timer_id in active_timers:\n                active_timers[timer_id]['status'] = 'completed'\n                active_timers[timer_id]['completed_at'] = datetime.now().isoformat()\n                \n                # ここで音声通知やUIへの通知を行う\n                # （実際の実装では、IPCやWebSocket経由で通知）\n                print(f\"🔔 タイマー完了通知: {formatted_duration}のタイマーが終了しました！\")\n        except Exception as e:\n            if timer_id in active_timers:\n                active_timers[timer_id]['status'] = 'error'\n                active_timers[timer_id]['error'] = str(e)\n    \n    # タイマー情報を記録\n    active_timers[timer_id] = {\n        'id': timer_id,\n        'seconds': seconds,\n        'formatted_duration': formatted_duration,\n        'start_time': start_time.isoformat(),\n        'end_time': end_time.isoformat(),\n        'status': 'running',\n        'created_at': start_time.isoformat()\n    }\n    \n    # バックグラウンドでタイマー実行\n    timer_thread = threading.Thread(target=timer_callback, daemon=True)\n    timer_thread.start()\n    \n    return timer_id\n\ndef get_active_timers():\n    \"\"\"アクティブなタイマー一覧取得\"\"\"\n    current_time = datetime.now()\n    \n    for timer_id, timer_info in active_timers.items():\n        if timer_info['status'] == 'running':\n            end_time = datetime.fromisoformat(timer_info['end_time'])\n            if current_time >= end_time:\n                timer_info['status'] = 'completed'\n                timer_info['completed_at'] = current_time.isoformat()\n    \n    return active_timers\n\n# 入力データ解析\ntry:\n    timer_data = json.loads(input())\nexcept:\n    timer_data = {'success': False, 'error': '入力データの解析に失敗しました'}\n\nif timer_data['success']:\n    seconds = timer_data['seconds']\n    formatted_duration = timer_data['formatted_duration']\n    \n    try:\n        timer_id = create_timer(seconds, formatted_duration)\n        \n        # Yes-Man風の応答生成\n        responses = [\n            f\"はい！{formatted_duration}のタイマーを設定しました！時間になったらお知らせします！\",\n            f\"もちろんです！{formatted_duration}でタイマーを開始しました！\",\n            f\"タイマー設定完了です！{formatted_duration}後にお知らせしますね！\",\n            f\"はい、{formatted_duration}のタイマーをスタートしました！\",\n        ]\n        \n        # 時間に応じてコメントを追加\n        if seconds >= 1800:  # 30分以上\n            comment = \"（長時間のタイマーですね！お疲れ様です）\"\n        elif seconds >= 300:  # 5分以上\n            comment = \"（ちょうど良い時間ですね！）\"\n        elif seconds < 60:   # 1分未満\n            comment = \"（短時間のタイマーですね！）\"\n        else:\n            comment = \"\"\n        \n        # レスポンス選択（簡易実装）\n        response_index = timer_counter % len(responses)\n        final_response = responses[response_index] + comment\n        \n        result = {\n            'success': True,\n            'error': None,\n            'timer_id': timer_id,\n            'seconds': seconds,\n            'formatted_duration': formatted_duration,\n            'response': final_response,\n            'start_time': active_timers[timer_id]['start_time'],\n            'end_time': active_timers[timer_id]['end_time']\n        }\n        \n    except Exception as e:\n        result = {\n            'success': False,\n            'error': f\"タイマーの作成でエラーが発生しました: {str(e)}\",\n            'timer_id': None,\n            'seconds': seconds,\n            'formatted_duration': formatted_duration,\n            'response': f\"申し訳ありません！タイマーの設定でエラーが発生しました。でも、もう一度試してみてくださいね！\"\n        }\n        \nelse:\n    # パース・バリデーションエラー\n    error_msg = timer_data.get('error', '不明なエラー')\n    result = {\n        'success': False,\n        'error': error_msg,\n        'timer_id': None,\n        'response': f\"申し訳ありません！{error_msg}です。'30秒'や'5分'のように指定してくださいね！\"\n    }\n\nprint(json.dumps(result, ensure_ascii=False))"
+      }
+    },
+    {
+      "id": "timer_status",
+      "type": "PythonREPL",
+      "position": { "x": 700, "y": 100 },
+      "data": {
+        "name": "status_checker",
+        "description": "タイマー状態確認機能",
+        "code": "import json\nfrom datetime import datetime\n\n# アクティブタイマーの状態確認\ndef check_timer_status():\n    \"\"\"現在のタイマー状態をチェック\"\"\"\n    try:\n        # 実際の実装では、グローバル状態や永続化ストレージから取得\n        # ここでは簡易実装\n        current_time = datetime.now()\n        \n        # 仮想的なタイマー情報（実際はactive_timersから取得）\n        status_info = {\n            'active_timers_count': len(globals().get('active_timers', {})),\n            'current_time': current_time.isoformat(),\n            'status': 'ready'\n        }\n        \n        if status_info['active_timers_count'] > 0:\n            response = f\"はい！現在 {status_info['active_timers_count']} 個のタイマーが動いています！\"\n        else:\n            response = \"はい！現在動いているタイマーはありません。新しいタイマーを設定しますか？\"\n        \n        return {\n            'success': True,\n            'info': status_info,\n            'response': response\n        }\n        \n    except Exception as e:\n        return {\n            'success': False,\n            'error': str(e),\n            'response': \"申し訳ありません！タイマーの状態確認でエラーが発生しました。\"\n        }\n\n# 状態チェック実行\nstatus_result = check_timer_status()\nprint(json.dumps(status_result, ensure_ascii=False))"
+      }
+    },
+    {
+      "id": "timer_output",
+      "type": "TextOutput",
+      "position": { "x": 700, "y": 200 },
+      "data": {
+        "output_name": "timer_result",
+        "output_description": "タイマー実行結果とYes-Man風の応答"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "timer_edge_1",
+      "source": "timer_input",
+      "sourceHandle": "output",
+      "target": "duration_parser",
+      "targetHandle": "input"
+    },
+    {
+      "id": "timer_edge_2",
+      "source": "duration_parser",
+      "sourceHandle": "output",
+      "target": "timer_executor",
+      "targetHandle": "input"
+    },
+    {
+      "id": "timer_edge_3",
+      "source": "timer_executor",
+      "sourceHandle": "output",
+      "target": "timer_output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "timer_edge_4",
+      "source": "timer_status",
+      "sourceHandle": "output",
+      "target": "timer_output",
+      "targetHandle": "status_input"
+    }
+  ],
+  "settings": {
+    "tool_name": "timer",
+    "tool_description": "Yes-Man用タイマーツール",
+    "tool_category": "utility",
+    "features": {
+      "multiple_timers": true,
+      "flexible_input": true,
+      "background_execution": true,
+      "notification_support": true
+    },
+    "limits": {
+      "min_duration": 1,
+      "max_duration": 3600,
+      "max_concurrent_timers": 10
+    },
+    "supported_formats": [
+      "秒数のみ（例: 30）",
+      "秒指定（例: 30秒, 30s）",
+      "分指定（例: 5分, 5min, 5m）",
+      "時間指定（例: 1時間, 1hour, 1h）",
+      "複合指定（例: 3分30秒, 1時間30分）",
+      "MM:SS形式（例: 5:30）",
+      "HH:MM:SS形式（例: 1:30:45）"
+    ]
+  },
+  "examples": [
+    {
+      "input": "30",
+      "expected_output": "はい！30秒のタイマーを設定しました！時間になったらお知らせします！",
+      "description": "秒数のみ指定"
+    },
+    {
+      "input": "5分",
+      "expected_output": "もちろんです！5分でタイマーを開始しました！",
+      "description": "分単位指定"
+    },
+    {
+      "input": "3分30秒",
+      "expected_output": "タイマー設定完了です！3分30秒後にお知らせしますね！",
+      "description": "複合時間指定"
+    },
+    {
+      "input": "10:30",
+      "expected_output": "はい、10分30秒のタイマーをスタートしました！",
+      "description": "MM:SS形式"
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-09-08T00:00:00Z",
+    "updated_at": "2025-09-08T00:00:00Z",
+    "version": "1.0.0",
+    "compatibility": {
+      "langflow_version": ">=1.0.0",
+      "python_version": ">=3.8"
+    },
+    "dependencies": {
+      "threading": "builtin",
+      "time": "builtin",
+      "datetime": "builtin",
+      "re": "builtin",
+      "json": "builtin"
+    },
+    "notifications": {
+      "completion_methods": [
+        "音声通知（TTS）",
+        "UI通知",
+        "ログ出力"
+      ],
+      "integration_points": [
+        "IPC通信",
+        "WebSocket",
+        "音声レイヤー連携"
+      ]
+    }
+  }
+}
