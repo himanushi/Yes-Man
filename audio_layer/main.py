@@ -26,6 +26,7 @@ from .continuous_recognition import ContinuousRecognition, ContinuousRecognition
 from .voicevox_integration import VoiceVoxIntegration, VoiceVoxConfig
 from .audio_buffer import AudioBufferManager, AudioBufferConfig, AudioChunk
 from .microphone_input import MicrophoneInput, MicrophoneConfig
+from .langflow_client import LangFlowClient, LangFlowConfig, FlowExecutionRequest
 
 # データベース
 from .database.models.conversation_session import ConversationSession, ConversationSessionRepository
@@ -93,6 +94,7 @@ class AudioLayerManager:
         self.continuous_recognition: Optional[ContinuousRecognition] = None
         self.voicevox: Optional[VoiceVoxIntegration] = None
         self.audio_buffer: Optional[AudioBufferManager] = None
+        self.langflow: Optional[LangFlowClient] = None
         
         # データベースリポジトリ
         self.session_repo = ConversationSessionRepository()
@@ -189,10 +191,19 @@ class AudioLayerManager:
             )
             self.microphone = MicrophoneInput(microphone_config)
             
-            # 7. コールバック設定
+            # 7. LangFlow初期化
+            langflow_config = LangFlowConfig(
+                base_url="http://localhost:7860",
+                default_flow_id="yes_man_agent"
+            )
+            self.langflow = LangFlowClient(langflow_config)
+            if not await self.langflow.initialize():
+                self.logger.warning("Failed to initialize LangFlow client")
+            
+            # 8. コールバック設定
             self._setup_callbacks()
             
-            # 8. 音声バッファにプロセッサ登録
+            # 9. 音声バッファにプロセッサ登録
             self._register_audio_processors()
             
             self._start_time = datetime.now()
@@ -364,9 +375,59 @@ class AudioLayerManager:
                 self.logger.info(f"Conversation exchange recorded: {exchange_id}")
                 
                 self._total_exchanges += 1
+                
+                # OpenAI API呼び出し（LangFlow経由）
+                await self._process_user_input(final_text, exchange_id)
         
         except Exception as e:
             self.logger.error(f"Recognition complete callback error: {e}")
+    
+    async def _process_user_input(self, user_text: str, exchange_id: int) -> None:
+        """ユーザー入力を処理してYes-Man応答を生成"""
+        try:
+            self.logger.info(f"Processing user input: '{user_text}'")
+            
+            # LangFlow経由でOpenAI API呼び出し
+            if self.langflow:
+                flow_request = FlowExecutionRequest(
+                    flow_id="yes_man_agent",
+                    input_data={"message": user_text},
+                    session_id=self._current_session.session_id if self._current_session else None
+                )
+                
+                result = await self.langflow.execute_flow(flow_request)
+                
+                if result.success:
+                    yes_man_response = result.response_text
+                    self.logger.info(f"LangFlow response received: {yes_man_response}")
+                else:
+                    self.logger.error(f"LangFlow error: {result.error_message}")
+                    yes_man_response = "申し訳ありません、現在システムに問題が発生しています。もう一度お試しください！"
+            else:
+                # LangFlow未初期化時のフォールバック
+                yes_man_response = f"はい！{user_text}についてお答えします！もちろんです、喜んでお手伝いいたします！"
+            
+            self.logger.info(f"Yes-Man response: '{yes_man_response}'")
+            
+            # データベースに応答記録
+            if self._current_session:
+                exchange = ConversationExchange(
+                    session_id=self._current_session.id,
+                    agent_response=yes_man_response,
+                    agent_response_confidence=1.0,
+                    exchange_type="voice",
+                    created_at=datetime.now()
+                )
+                await self.exchange_repo.create(exchange)
+            
+            # TTS音声合成・再生
+            await self.synthesize_and_speak(yes_man_response)
+            
+        except Exception as e:
+            self.logger.error(f"User input processing error: {e}")
+            # エラー時のフォールバック応答
+            fallback_response = "申し訳ありません、少し問題が発生しました。もう一度お試しください！"
+            await self.synthesize_and_speak(fallback_response)
     
     async def _on_synthesis_complete(self, text: str, audio_data: str, duration: float) -> None:
         """音声合成完了時コールバック"""
@@ -532,6 +593,9 @@ class AudioLayerManager:
             
             if self.whisper:
                 self.whisper.cleanup()
+            
+            if self.langflow:
+                await self.langflow.cleanup()
             
             self.logger.info("Audio layer cleanup completed")
             
