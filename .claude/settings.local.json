@@ -4,7 +4,8 @@
       "Bash(scripts/create-new-feature.sh:*)",
       "WebSearch",
       "Bash(scripts/setup-plan.sh:*)",
-      "Bash(scripts/update-agent-context.sh:*)"
+      "Bash(scripts/update-agent-context.sh:*)",
+      "Bash(scripts/check-task-prerequisites.sh:*)"
     ],
     "deny": [],
     "ask": []
