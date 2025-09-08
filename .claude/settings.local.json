@@ -27,7 +27,8 @@
       "Bash(npm init:*)",
       "Bash(npm install:*)",
       "Bash(python scripts/check_voicevox.py:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "WebFetch(domain:docs.langflow.org)"
     ],
     "deny": [],
     "ask": []
