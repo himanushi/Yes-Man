@@ -410,7 +410,7 @@ class AudioLayerManager:
                 session_id=str(uuid.uuid4()),
                 started_at=datetime.now(),
                 user_name="User",
-                session_status="ACTIVE"
+                session_status="active"
             )
             
             session_id = await self.session_repo.create(session)
@@ -513,14 +513,13 @@ class AudioLayerManager:
             self.logger.error(f"Cleanup error: {e}")
 
 
-# シグナルハンドラ
-def signal_handler(audio_manager: AudioLayerManager):
+# グローバル停止フラグ
+_shutdown_event = asyncio.Event()
+
+def signal_handler(signum, frame):
     """シグナルハンドラ"""
-    def handler(signum, frame):
-        print(f"\nReceived signal {signum}, shutting down...")
-        asyncio.create_task(audio_manager.cleanup())
-        sys.exit(0)
-    return handler
+    print(f"\nReceived signal {signum}, shutting down...")
+    _shutdown_event.set()
 
 
 async def main():
@@ -532,8 +531,9 @@ async def main():
     audio_manager = AudioLayerManager(config)
     
     # シグナルハンドラ設定
-    signal.signal(signal.SIGINT, signal_handler(audio_manager))
-    signal.signal(signal.SIGTERM, signal_handler(audio_manager))
+    signal.signal(signal.SIGINT, signal_handler)
+    if hasattr(signal, 'SIGTERM'):  # Windows対応
+        signal.signal(signal.SIGTERM, signal_handler)
     
     try:
         # 初期化
@@ -550,8 +550,8 @@ async def main():
         print("Listening for wake word: 'Yes-Man'")
         print("Press Ctrl+C to stop...")
         
-        # メインループ
-        while audio_manager._is_running:
+        # メインループ（Ctrl+C監視付き）
+        while audio_manager._is_running and not _shutdown_event.is_set():
             await asyncio.sleep(1)
             
             # 統計表示（デバッグ用）
@@ -560,6 +560,11 @@ async def main():
                 print(f"Uptime: {stats['system']['uptime_seconds']:.0f}s, "
                       f"Wake words: {stats['system']['successful_wake_word_detections']}, "
                       f"Recognitions: {stats['system']['successful_recognitions']}")
+        
+        # シャットダウンが要求された場合
+        if _shutdown_event.is_set():
+            print("Shutdown requested, cleaning up...")
+            await audio_manager.cleanup()
         
         return 0
         
