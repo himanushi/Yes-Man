@@ -130,6 +130,23 @@ htmlcov/
 .dmypy.json
 dmypy.json
 
+# === Yes-Man ウェイクワード学習データ ===
+# openWakeWord学習データ（重いファイル）
+openWakeWord/yes_man_model_output/
+openWakeWord/piper-sample-generator/models/*.pt
+openWakeWord/piper-sample-generator/models/*.onnx
+openWakeWord/piper-sample-generator/models/*.onnx.json
+yes_man_training_data/
+*.npy
+yes_man_model.pth
+yes_man_model.onnx
+
+# 学習用音声クリップ
+positive_clips_*/
+negative_clips_*/
+clips_*/
+features_*/
+
 # === バックアップ ===
 backup/
 *.backup
