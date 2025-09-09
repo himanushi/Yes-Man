@@ -96,6 +96,7 @@ dependencies = [
     "piper-phonemize>=1.0.0",
     "espeak-phonemizer>=1.2.0",
     "deep-phonemizer>=0.0.19",
+    "onnx>=1.14.0",
     "resampy>=0.4.2",
     # "pedalboard>=0.8.0",  # Windowsで問題がある場合はコメントアウト
     # "noisereduce>=3.0.0",  # 依存関係の問題がある場合はコメントアウト
