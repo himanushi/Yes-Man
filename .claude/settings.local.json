@@ -31,7 +31,8 @@
       "WebFetch(domain:docs.langflow.org)",
       "WebFetch(domain:github.com)",
       "Bash(python:*)",
-      "Bash(timeout 30 uv run:*)"
+      "Bash(timeout 30 uv run:*)",
+      "Bash(wget:*)"
     ],
     "deny": [],
     "ask": []
