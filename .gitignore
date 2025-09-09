@@ -140,6 +140,8 @@ yes_man_training_data/
 *.npy
 yes_man_model.pth
 yes_man_model.onnx
+*.pt
+*_full.pt
 
 # 学習用音声クリップ
 positive_clips_*/
