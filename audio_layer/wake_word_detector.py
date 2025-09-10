@@ -17,9 +17,18 @@ from dataclasses import dataclass
 from datetime import datetime
 from collections import deque
 import re
+import os
+import json
 
 from .whisper_integration import WhisperIntegration, WhisperConfig
 from .database.models.agent_settings import AgentSettingsRepository
+
+try:
+    import openwakeword
+    from openwakeword.model import Model
+    OPENWAKEWORD_AVAILABLE = True
+except ImportError:
+    OPENWAKEWORD_AVAILABLE = False
 
 
 @dataclass 
@@ -32,6 +41,11 @@ class WakeWordConfig:
     cooldown_ms: int = 2000  # 連続検出防止クールダウン
     max_audio_buffer_seconds: int = 3  # 憲法IV: 3秒循環バッファ
     sample_rate: int = 16000
+    
+    # openWakeWord設定
+    use_openwakeword: bool = True  # openWakeWordモデルを使用
+    openwakeword_model_path: str = "openWakeWord/yes_man_model_output/yes_man.pt"
+    openwakeword_threshold: float = 0.5  # openWakeWord検出閾値
     
     def __post_init__(self):
         if self.alternative_forms is None:
@@ -57,7 +71,12 @@ class WakeWordDetector:
         self.config = config or WakeWordConfig()
         self.logger = logging.getLogger(__name__)
         
-        # Whisper統合
+        # openWakeWordモデル初期化
+        self.oww_model = None
+        if self.config.use_openwakeword and OPENWAKEWORD_AVAILABLE:
+            self._init_openwakeword()
+        
+        # Whisper統合（フォールバック用）
         if whisper:
             self.whisper = whisper
         else:
@@ -89,6 +108,37 @@ class WakeWordDetector:
         
         # 設定読み込み
         self._load_settings()
+    
+    def _init_openwakeword(self) -> None:
+        """openWakeWordモデル初期化"""
+        try:
+            model_path = self.config.openwakeword_model_path
+            if not os.path.exists(model_path):
+                self.logger.warning(f"openWakeWord model not found: {model_path}")
+                return
+            
+            # Yes-Manカスタムモデルのロード
+            if os.path.exists(model_path):
+                # カスタムモデル辞書を作成
+                custom_model_paths = {"yes_man": model_path}
+                self.oww_model = Model(
+                    wakeword_models=["yes_man"],
+                    custom_model_paths=custom_model_paths,
+                    inference_framework="onnx"
+                )
+                self.logger.info(f"Yes-Man custom model loaded: {model_path}")
+            else:
+                # フォールバック：デフォルトモデル
+                self.oww_model = Model(
+                    wakeword_models=["hey_jarvis_v0.1"],
+                    inference_framework="onnx"
+                )
+                self.logger.warning("Using fallback model: hey_jarvis")
+            self.logger.info("openWakeWord initialized successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize openWakeWord: {e}")
+            self.oww_model = None
     
     def _load_settings(self) -> None:
         """データベースから設定読み込み"""
@@ -215,7 +265,11 @@ class WakeWordDetector:
             Tuple[float, str]: (信頼度, 検出テキスト)
         """
         try:
-            # Whisper音声認識
+            # openWakeWord優先検出
+            if self.oww_model is not None:
+                return self._detect_with_openwakeword(audio_data)
+            
+            # Whisperフォールバック
             result = self.whisper.transcribe(audio_data, language="ja")
             text = result.get("text", "").strip()
             
@@ -231,6 +285,41 @@ class WakeWordDetector:
             import traceback
             self.logger.error(f"Wake word detection error: {e}")
             self.logger.error(f"Traceback: {traceback.format_exc()}")
+            return 0.0, ""
+    
+    def _detect_with_openwakeword(self, audio_data: np.ndarray) -> Tuple[float, str]:
+        """
+        openWakeWordによる検出
+        
+        Returns:
+            Tuple[float, str]: (信頼度, 検出テキスト)
+        """
+        try:
+            # 音声データを16kHzに変換（必要に応じて）
+            if len(audio_data.shape) > 1:
+                audio_data = audio_data.mean(axis=1)  # モノラル変換
+            
+            # openWakeWordは16bit intを期待
+            if audio_data.dtype != np.int16:
+                audio_data = (audio_data * 32767).astype(np.int16)
+            
+            # 検出実行
+            prediction = self.oww_model.predict(audio_data)
+            
+            # Yes-Manモデルの信頼度を取得
+            confidence = prediction.get("yes_man", 0.0)
+            
+            # フォールバック：hey_jarvis
+            if confidence == 0.0:
+                confidence = prediction.get("hey_jarvis_v0.1", 0.0)
+            
+            if confidence > self.config.openwakeword_threshold:
+                return confidence, "Yes-Man"  # 検出時はYes-Manと報告
+            
+            return confidence, ""
+            
+        except Exception as e:
+            self.logger.error(f"openWakeWord detection error: {e}")
             return 0.0, ""
     
     def _calculate_wake_word_confidence(self, text: str) -> float:
