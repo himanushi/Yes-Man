@@ -23,9 +23,7 @@ def setup_logging():
 def test_wake_word_detection():
     """ウェイクワード検出テスト"""
     print("🤖 Yes-Man ウェイクワード検出テスト開始")
-    print("📢 マイクに向かって「Yes Man」と話してください")
-    print("🔄 フォールバック: 「Hey Jarvis」でもテスト可能")
-    print("🔴 Ctrl+C で終了")
+    print("=" * 50)
     
     # 設定
     config = WakeWordConfig(
@@ -34,8 +32,15 @@ def test_wake_word_detection():
         confidence_threshold=0.5
     )
     
+    print("⚙️ 検出器初期化中...")
     # 検出器初期化
     detector = WakeWordDetector(config)
+    
+    print("=" * 50)
+    print("📢 マイクに向かって「Yes Man」と話してください")
+    print("🔄 フォールバック: 「Hey Jarvis」でもテスト可能")
+    print("🔴 Ctrl+C で終了")
+    print("=" * 50)
     
     # 音声入力設定
     CHUNK = 1024
@@ -55,6 +60,7 @@ def test_wake_word_detection():
         )
         
         print("🎤 音声入力開始...")
+        print("🟢 検出システム稼働中...")
         
         while True:
             try:
