@@ -127,6 +127,7 @@ class WakeWordDetector:
                     inference_framework="onnx"
                 )
                 self.logger.info(f"Yes-Man custom model loaded: {model_path}")
+                print(f"✅ Yes-Manカスタムモデル起動完了: {model_path}")
             else:
                 # フォールバック：デフォルトモデル
                 self.oww_model = Model(
@@ -134,7 +135,9 @@ class WakeWordDetector:
                     inference_framework="onnx"
                 )
                 self.logger.warning("Using fallback model: hey_jarvis")
+                print("⚠️ フォールバックモデル起動: hey_jarvis")
             self.logger.info("openWakeWord initialized successfully")
+            print("🚀 openWakeWord起動完了！")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize openWakeWord: {e}")
