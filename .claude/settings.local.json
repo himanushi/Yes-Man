@@ -32,7 +32,8 @@
       "WebFetch(domain:github.com)",
       "Bash(python:*)",
       "Bash(timeout 30 uv run:*)",
-      "Bash(wget:*)"
+      "Bash(wget:*)",
+      "Bash(uv sync:*)"
     ],
     "deny": [],
     "ask": []
