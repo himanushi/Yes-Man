@@ -67,7 +67,7 @@ authors = [
 
 dependencies = [
     # 音声処理  
-    "openai-whisper>=20231117",
+    # "openai-whisper>=20231117",  # OpenAI API使用のため不要
     "torch",
     "torchvision", 
     "torchaudio",
@@ -77,8 +77,8 @@ dependencies = [
     
     # openWakeWord関連
     "openwakeword>=0.6.0",
-    "speechbrain>=0.5.0",
-    "datasets>=2.0.0",
+    # "speechbrain>=0.5.0",  # 重いライブラリ - 学習時のみ必要
+    # "datasets>=2.0.0",  # 重いライブラリ - 学習時のみ必要
     "scipy>=1.10.0",
     "matplotlib>=3.5.0",
     "pyyaml>=6.0",
@@ -93,9 +93,9 @@ dependencies = [
     "acoustics>=0.2.6",
     # "piper-tts>=1.2.0",  # Windowsで問題がある場合はコメントアウト
     "webrtcvad-wheels>=2.0.10",  # Windows用ビルド済みバージョン
-    "piper-phonemize>=1.0.0",
-    "espeak-phonemizer>=1.2.0",
-    "deep-phonemizer>=0.0.19",
+    # "piper-phonemize>=1.0.0",  # Linux/macOS専用
+    # "espeak-phonemizer>=1.2.0",  # Linux/macOS専用
+    # "deep-phonemizer>=0.0.19",  # Linux/macOS専用
     "onnx>=1.14.0",
     "resampy>=0.4.2",
     # "pedalboard>=0.8.0",  # Windowsで問題がある場合はコメントアウト
