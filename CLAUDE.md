@@ -2,6 +2,7 @@
 
 すべての機能計画から自動生成。最終更新: 2025-09-08
 
+
 ## アクティブテクノロジー
 - Python 3.11 + JavaScript/TypeScript (Electron) + whispercpp[gpu], langflow, requests, electron, react (feature/001-yes-man-fallout)
 - SQLite (LangFlow統合) (feature/001-yes-man-fallout)
